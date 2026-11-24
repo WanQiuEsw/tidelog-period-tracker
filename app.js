@@ -105,7 +105,7 @@ const DOCTOR_QUESTIONS = [
   "有重要考试/旅行撞期，可以怎么安全调整？"
 ];
 
-// 基础阶段元数据（Milestone 2 将注入完整温柔搭子/霸总双人设与即时语料）
+// 阶段视觉元数据 + 双人设（温柔手帐搭子 / 霸总模式）活人感语料引擎
 const SEASON_META = {
   winter: {
     key: "winter",
@@ -115,10 +115,8 @@ const SEASON_META = {
     stealthChip: "小雨 · 节能休整",
     title: "电量告急 · 合法躺平期",
     stealthTitle: "低电量休整日",
-    work: "这两天不用逼自己冲刺，做点轻收尾、整理和放空就够了。",
-    sport: "暂停蹦跳和卷腹，散散步、伸展一下肩膀或者早点躺进被窝最舒服。",
-    note: "现在身体正在悄悄换新，只想发呆、不想说话不是偷懒，是身体在喊你慢下来。",
-    waveLevel: 148
+    battery: "20%",
+    waveLevel: 146
   },
   spring: {
     key: "spring",
@@ -128,9 +126,7 @@ const SEASON_META = {
     stealthChip: "晴朗 · 电量回升",
     title: "满血回春 · 状态回升中",
     stealthTitle: "清透回血日",
-    work: "脑子开始变轻盈，适合开启新计划、学点新东西或约朋友聊聊天。",
-    sport: "体力恢复得很快，慢跑、普拉提、快走或者轻力量都可以慢慢安排上。",
-    note: "水肿在消，皮肤也在变亮。趁这几天心情轻快，去做件一直想做的小事吧。",
+    battery: "85%",
     waveLevel: 158
   },
   summer: {
@@ -141,10 +137,8 @@ const SEASON_META = {
     stealthChip: "大晴 · 满格状态",
     title: "全月高光 · 精力拉满",
     stealthTitle: "高能晴朗日",
-    work: "表达欲和底气都很足，重要的汇报、面试、谈事或约会放这几天很合适。",
-    sport: "体能在线，喜欢运动的话可以小冲一下，记得多喝水、别排太满。",
-    note: "这几天很容易看什么都顺眼；如果偶尔单侧小腹有一点点闷，大多是排卵的小信号。",
-    waveLevel: 166
+    battery: "100%",
+    waveLevel: 168
   },
   autumn: {
     key: "autumn",
@@ -152,14 +146,291 @@ const SEASON_META = {
     softVar: "var(--season-autumn-soft)",
     chip: "经前预警 · 敏感期",
     stealthChip: "多云 · 慢节奏",
-    title: "经前预警 · 情绪易燃易爆炸",
+    title: "经前预警 · 易燃易爆炸",
     stealthTitle: "微风多云日",
-    work: "对细节和噪音更敏感，适合戴上耳机独立收尾，少管闲事、少做重大决定。",
-    sport: "比平时更容易累和喘，把高强度换成拉伸、瑜伽或慢走，别责怪体力变差。",
-    note: "突然嘴馋甜食或莫名委屈，真的不是你矫情，是激素在退潮。早点睡，买点喜欢的吃。",
-    waveLevel: 154
+    battery: "45%",
+    waveLevel: 152
   }
 };
+
+const PERSONA_COPY = {
+  gentle: {
+    name: "手帐搭子",
+    avatar: "搭",
+    defaultTag: "今日悄悄话",
+    reactTag: "接住你啦",
+    hugTitle: "给你兜底的一句话",
+    lateHint: d => `它晚点了 ${d} 天，先别慌呀，最近是不是太累或熬夜了？身体偶尔会踩一下刹车。`,
+    startToast: "记好啦，这几天什么都别硬撑，慢慢来。",
+    endToast: "好耶，这趟顺利度过啦，准备慢慢回血！",
+    seasons: {
+      winter: {
+        greeting: "今天电量本来就低，只想发呆、不想回消息都特别正常。把暖贴和热饮放手边，允许自己当一天咸鱼。",
+        work: "不用逼自己冲刺，挑几件轻松的收尾活做完就行，难啃的事可以留到下周。",
+        sport: "暂停蹦跳和卷腹，散散步、伸个懒腰，或者早点钻进被窝最舒服。",
+        hug: "现在身体正在悄悄换新，反应变慢一点不是偷懒，是身体在温柔地喊你慢下来。"
+      },
+      spring: {
+        greeting: "最难熬的几天翻篇啦！是不是觉得脑子轻快了不少？趁这股顺风去做件自己一直想做的小事吧。",
+        work: "好奇心和专注力都在回来，开新坑、整理计划、约想见的朋友都很合适。",
+        sport: "体力和恢复力都在悄悄涨回来，慢跑、普拉提、快走都能安排得挺舒服。",
+        hug: "水肿在消，气色也在变亮。不用赶进度，顺着这几天的好状态轻盈地往前走就好。"
+      },
+      summer: {
+        greeting: "这几天是你整个月里底气最足的高光时刻，气色和表达欲都在线，大胆去发光吧。",
+        work: "重要的汇报、面试、谈条件或约会放这几天超加分，你说话会比平时更有感染力。",
+        sport: "状态满格，喜欢流汗的话可以小冲一下，记得多补水、也别把日程塞得太满。",
+        hug: "如果偶尔觉得单侧小腹微微发闷，大多是排卵的小信号，放宽心，身体在好好工作呢。"
+      },
+      autumn: {
+        greeting: "快到日子啦，这两天觉得烦、想吃甜食、看啥都不顺眼，真的不是你矫情，是激素在退潮。",
+        work: "对噪音和细节更敏感，适合戴上耳机安安静静收尾，少管闲事、少做冲动决定。",
+        sport: "比平时更容易累和喘，把高强度换成拉伸或散步就好，绝不要责怪自己体力下降。",
+        hug: "今天如果突然很委屈或者只想吃碳水，请把锅大大方方扣给激素。早点睡，明天会松快很多。"
+      }
+    }
+  },
+  ceo: {
+    name: "霸总管家",
+    avatar: "总",
+    defaultTag: "今日批示",
+    reactTag: "霸总已接管",
+    hugTitle: "霸总今日批示",
+    lateHint: d => `晚了 ${d} 天而已，不许自己瞎琢磨。最近是不是又熬夜了？今晚十一点前乖乖睡觉，我盯着。`,
+    startToast: "收到了。这几天准你合法躺平，不许硬扛。",
+    endToast: "渡劫结束，大小姐准备满血回归。",
+    seasons: {
+      winter: {
+        greeting: "女人，今天电量就剩 20% 了还想硬撑？准你提前躺平。热饮、暖贴和止痛药全部配齐，天塌下来今天也改天再说。",
+        work: "不急的破事全部往后排，今天只准处理三件以内的小事，谁催你我替你挡回去。",
+        sport: "高强度运动全部叫停！今天就允许散步和躺平，谁让你去卷腹的？",
+        hug: "记住，你不是脆弱，是身体在每月升级系统。这几天别讲效率，舒服才是最高指令。"
+      },
+      spring: {
+        greeting: "渡劫完毕，状态回来了？不错，这几天气色和脑子都在线，想买什么、想见谁尽管去，别委屈自己。",
+        work: "脑子这么清楚，正好拿来推进你真正想做的事，顺手把之前欠的漂亮仗打回来。",
+        sport: "体能涨回来了，想跑想练尽管上，但别忘了热身，伤着自己我可不批。",
+        hug: "这几天的好状态是你应得的，大方享受，别老想着讨好别人。"
+      },
+      summer: {
+        greeting: "全月高光期到了，今天的你气场两米八。重要谈判、面试、拍照约会统统安排上，全场你最亮眼。",
+        work: "有底气的时候就要往前站，该要的功劳和条件今天直接提，气势稳赢。",
+        sport: "电量满格，想突破记录就趁这两天，练完记得补蛋白和温水。",
+        hug: "顺便提醒一句：如果不打算备孕，这几天安全措施必须 100% 到位，听见没有？"
+      },
+      autumn: {
+        greeting: "提前给你提个醒：快来了。这两天看谁不顺眼直接拉黑，想吃甜食立刻去买。错的不是你，是激素，听懂了吗？",
+        work: "把废话多的人都屏蔽掉，戴上降噪耳机专心收尾，重要决定等过几天再拍板。",
+        sport: "这两天容易累是正常现象，别跟跑步机较劲，去做个拉伸泡泡脚，早点休息。",
+        hug: "谁要是敢在这几天跟你讲大道理，直接把我的生存小票甩他脸上。今晚十点半前必须上床。"
+      }
+    }
+  }
+};
+
+// 点胶囊后的活人感即时回应（多条轮换，不重样）
+const SYMPTOM_REPLIES = {
+  pain_cramps_heavy: {
+    gentle: [
+      "抱抱你，痛到难受千万别硬扛，布洛芬配温水、暖宝宝贴好，今天什么都不做也没关系。",
+      "辛苦了，小腹发紧的时候可以蜷着侧躺一会儿，或者点上面「有点难受」跟着缓口气。"
+    ],
+    ceo: [
+      "痛成这样还拿着手机？立刻放下！暖贴贴好、止痛药按时吃，今天所有待办全部作废。",
+      "女人，不许硬扛痛经，去泡杯热的躺被窝里，剩下的事明天再说。"
+    ]
+  },
+  pain_cramps_mild: {
+    gentle: [
+      "小腹坠坠的时候最磨人了，把脚踝和肚子捂暖一点，少喝冰的会舒服不少。",
+      "收到信号啦，今天走路慢一点、别久站，晚上回家泡个热水脚吧。"
+    ],
+    ceo: [
+      "有点发坠就老实坐着，冰美式今天没收，换成热红豆汤或者温开水。",
+      "别不当回事，暖宝宝现在就贴上，防患于未然懂不懂？"
+    ]
+  },
+  body_backache: {
+    gentle: ["腰酸真的太消耗人了，找个靠垫垫在后腰，隔着衣服贴片暖贴在腰眼超管用。"],
+    ceo: ["腰酸就别死坐着了，靠垫垫好，起身晃两分钟，今晚必须早点躺平。"]
+  },
+  body_breast: {
+    gentle: ["胸胀敏感的时候，回家第一件事就是换上最松软的无钢圈内衣，给身体松松绑。"],
+    ceo: ["敏感期别穿勒人的衣服，怎么舒服怎么来，谁爱看谁看，你舒服最重要。"]
+  },
+  body_headache: {
+    gentle: ["头胀的时候屏幕亮度调低一点，闭眼深呼吸一分钟，喝口温水慢慢缓一缓。"],
+    ceo: ["头都痛了还盯着屏幕干嘛？把亮度调暗，闭眼歇五分钟，这是命令。"]
+  },
+  body_acne: {
+    gentle: ["下巴冒痘大多是周期前的小波动，千万别手痒去挤，早睡两天它自己会乖乖消下去。"],
+    ceo: ["冒颗痘而已，丝毫不影响你的美貌，但手给我老实点，不许抠！"]
+  },
+  body_bloating: {
+    gentle: ["这几天身体会多存一点水，体重涨一两斤都是假象！明天少吃点重盐，过两天秒消。"],
+    ceo: ["水肿涨的那两斤不算数，体重秤今天直接打入冷宫，不准上称给自己添堵。"]
+  },
+  body_insomnia: {
+    gentle: ["没睡好会放大所有疲惫，今天中午哪怕趴十分钟闭闭眼，也是在给大脑充电。"],
+    ceo: ["昨晚没睡好？今天午休必须补二十分钟，晚上手机放远点，不准再刷到半夜。"]
+  },
+  mood_tired: {
+    gentle: ["电量只剩 20% 啦，开启省电模式吧！今天能点外卖就不做饭，能躺着绝不坐着。"],
+    ceo: ["电量都标红了还撑什么？立刻切省电模式，外卖点热的，家务谁爱干谁干。"]
+  },
+  mood_irritable: {
+    gentle: [
+      "烦躁是身体在拉警报呢，不用逼自己当情绪稳定的大人，今天戴上耳机离吵闹远一点。",
+      "想发火很正常，把想骂的话丢进工具箱的「情绪树洞」冲进海里，别憋着自己。"
+    ],
+    ceo: [
+      "谁惹你生气了？不用讲道理，这几天你脾气大天经地义。不想理的人直接冷处理。",
+      "烦了就烦了，不用给任何人好脸色。工具箱里给你备了情绪树洞，去骂两句解解气。"
+    ]
+  },
+  mood_sad: {
+    gentle: [
+      "想哭就哭一会儿吧，眼泪能帮身体把多余的压力排出去。你已经很努力了，今天我站在你这边。",
+      "委屈的时候别急着振作，抱抱自己，点一杯热的甜饮，天黑了就早点钻被窝。"
+    ],
+    ceo: [
+      "怎么突然委屈上了？过来，今天不准偷偷掉眼泪。不是你太敏感，是激素在欺负人。",
+      "谁敢让你委屈？算了，激素惹的祸也算我账上。今晚早点睡，明天又是大小姐。"
+    ]
+  },
+  mood_craving: {
+    gentle: [
+      "不是你嘴馋，是激素在提醒你补点快乐因子。去买杯热饮或小蛋糕吧，今天免责！",
+      "想吃碳水就大大方方吃，温热的红豆汤、烤红薯或热奶茶，开心比热量表重要。"
+    ],
+    ceo: [
+      "想吃甜的就立刻去买，别看配料表和热量表。这几天吃进去的全算在激素账上！",
+      "批准碳水自由！去买你最想吃的那家甜品，不准犹豫。"
+    ]
+  },
+  mood_focus: {
+    gentle: ["脑子超清晰的一天！趁灵感在线把最想搞定的事一鼓作气拿下，晚上记得犒劳自己。"],
+    ceo: ["脑子这么好使，今天谁也拦不住你。干完漂亮活记得准点收工，别透支。"]
+  },
+  mood_calm: {
+    gentle: ["平静松弛的普通一天，其实最珍贵啦。祝你今天顺顺当当，微风正好。"],
+    ceo: ["状态稳得很，继续保持这股从容劲儿，今天诸事皆宜。"]
+  },
+  med_painkiller: {
+    gentle: ["按时吃止痛药是对自己负责，别有心理负担。配温水，等药效上来好好歇一会儿。"],
+    ceo: ["乖，难受就该吃药，硬扛才最傻。喝口温水靠着，等会儿就舒服了。"]
+  },
+  med_iron: {
+    gentle: ["暖暖的舒服多啦，记得隔着衣服贴防低温烫伤，手边再放杯温水。"],
+    ceo: ["暖贴备上了还算听话，别直接贴皮肤，小心烫着。"]
+  }
+};
+
+// 今日生存小票 3 种语气文案（温柔搭子风 / 霸总下令风 / 发疯梗王风）
+const RECEIPT_COPY = {
+  winter: {
+    gentle: {
+      title: "温柔照顾清单 · 经期休整",
+      quote: "她这几天电量只剩 20%，身体正在悄悄换新，比平时更容易累和怕冷。",
+      feeding: "热红豆汤、温热鲜奶、烤红薯、清淡热汤面",
+      dos: "顺手接管洗碗和跑腿、准备暖水袋、安安静静抱一抱",
+      donts: "别敷衍说“多喝热水”、别催赶时间、别在这几天争论复杂问题"
+    },
+    ceo: {
+      title: "霸总最高指令 · 休养日",
+      quote: "通知：此人今日护甲归零、电量告急，本人已批准她全天合法躺平，请配合执行。",
+      feeding: "热的甜饮、温补热汤、她点名想吃的任何热食",
+      dos: "主动包揽杂活、提供人肉暖手宝、无条件顺毛",
+      donts: "严禁说教、严禁问“怎么又累了”、严禁安排高体力暴走"
+    },
+    witty: {
+      title: "赛博渡劫小票 · 掉血期",
+      quote: "一级警报！正在经历每月一次的物理掉血，当前痛感放大 200%，闲人免惹。",
+      feeding: "热奶茶、布洛芬、热腾腾外卖、电子布洛芬搞笑视频",
+      dos: "默默递上暖贴和热饮、负责拿快递和洗碗、夸她今天也很可爱",
+      donts: "严禁讲大道理、严禁惹毛、严禁建议“去跑两圈就好了”"
+    }
+  },
+  spring: {
+    gentle: {
+      title: "温柔约会清单 · 回血期",
+      quote: "难熬的几天终于翻篇啦，她的精力和好心情正在一点点涨回来。",
+      feeding: "清爽沙拉、新开的咖啡馆、一起探一家没吃过的小店",
+      dos: "约她散步拍照、聊聊周末小计划、认真听她的新想法",
+      donts: "别扫兴泼冷水，这几天是她最有干劲的时候"
+    },
+    ceo: {
+      title: "霸总出行通知 · 回春期",
+      quote: "大小姐已满血复活，智商、颜值与好脾气重新占领高地，速速安排行程。",
+      feeding: "好吃的漂亮饭、心仪已久的小甜品、鲜花一支",
+      dos: "带她出门晒太阳、认真拍照不敷衍、支持她的每个决定",
+      donts: "不许宅着发霉、不许敷衍回消息"
+    },
+    witty: {
+      title: "复活节小票 · 满血中",
+      quote: "渡劫成功！本人已从咸鱼形态切换回人类形态，现限时开放约饭名额。",
+      feeding: "火锅、烧烤、冰美式（终于解禁了！）",
+      dos: "约逛街、看电影、一起干点新鲜好玩的事",
+      donts: "别浪费我这几天难得的好脾气"
+    }
+  },
+  summer: {
+    gentle: {
+      title: "高光闪耀清单 · 精力满格",
+      quote: "这是她一个月里状态最好、表达欲最旺的几天，气色和自信都在线。",
+      feeding: "浪漫晚餐、清爽果茶、一顿有仪式感的大餐",
+      dos: "真诚夸赞她的状态、安排约会或深度聊天、如非备孕务必做好保护",
+      donts: "别敷衍她的分享欲，也别在安全措施上掉链子"
+    },
+    ceo: {
+      title: "霸总高光令 · 满格日",
+      quote: "全月气场巅峰时刻，今日份赞美和约会请按最高规格安排，不许敷衍。",
+      feeding: "高颜值餐厅、微醺小酒（看心情）、精致甜点",
+      dos: "大方夸她好看、认真安排约会、安全措施 100% 到位",
+      donts: "禁止敷衍、禁止走神、禁止忘了安全措施"
+    },
+    witty: {
+      title: "限时福利小票 · 高光期",
+      quote: "全月看谁都顺眼的限时黄金窗口！错过这几天可就要进入秋日炸毛结界了。",
+      feeding: "漂亮饭 + 饭后小甜水",
+      dos: "疯狂夸夸、赶紧提想一起玩的事、安全措施拉满",
+      donts: "别不识抬举，且行且珍惜"
+    }
+  },
+  autumn: {
+    gentle: {
+      title: "温柔预警清单 · 经前敏感期",
+      quote: "离大姨妈很近啦，这几天她容易累、想吃甜食、情绪也更敏感，需要多一点偏爱。",
+      feeding: "热可可、小蛋糕、烤红薯、一切能带来安全感的碳水",
+      dos: "先拥抱再说话、给她独处和早睡的空间、备好小零食",
+      donts: "千万别把情绪波动说成“无理取闹”、别挑起敏感争吵"
+    },
+    ceo: {
+      title: "霸总戒严令 · 敏感结界",
+      quote: "警告：已进入暴风雨前夕！快乐激素正在滑坡，此阶段我方拥有无限免责权。",
+      feeding: "高甜小蛋糕、热奶茶、立刻送达的贴心投喂",
+      dos: "无条件站她这边、听她吐槽、帮她挡掉糟心事",
+      donts: "严禁顶嘴、严禁冷战、严禁问“你怎么又生气了”"
+    },
+    witty: {
+      title: "易燃易爆小票 · PMS预警",
+      quote: "体内的疯狂星期四已提前开启！前一秒想哭后一秒想吵架，错在激素不在我。",
+      feeding: "甜食！碳水！热汤！电子布洛芬！",
+      dos: "顺毛摸、夸她没错、主动递上小零食和拥抱",
+      donts: "严禁讲道理、严禁挑刺、严禁呼吸太大声（开玩笑的）"
+    }
+  }
+};
+
+let replyPickCounter = 0;
+function pickSymptomReply(tagId, persona) {
+  const entry = SYMPTOM_REPLIES[tagId];
+  if (!entry) return null;
+  const list = entry[persona] || entry.gentle;
+  if (!list || !list.length) return null;
+  replyPickCounter = (replyPickCounter + 1) % 997;
+  return list[replyPickCounter % list.length];
+}
 
 function createDefaultState() {
   const todayStr = toDateStr(new Date());
@@ -437,6 +708,8 @@ function renderAll() {
 
 function renderTodayTab(stats, stealth, persona) {
   const s = stats.seasonInfo;
+  const p = PERSONA_COPY[persona] || PERSONA_COPY.gentle;
+  const pSeason = p.seasons[s.key] || p.seasons.winter;
   document.getElementById("currentPhaseChip").textContent = stealth ? s.stealthChip : s.chip;
 
   const regText =
@@ -472,7 +745,7 @@ function renderTodayTab(stats, stealth, persona) {
     const late = Math.abs(daysUntilNext);
     nextHintEl.textContent = stealth
       ? `比平时晚了 ${late} 天，别着急`
-      : `晚点了 ${late} 天，先别慌，最近累了吗？`;
+      : `晚点了 ${late} 天，先别慌`;
   }
 
   // 圆环与四季参考弧
@@ -500,13 +773,16 @@ function renderTodayTab(stats, stealth, persona) {
   document.getElementById("tideWaveBack").setAttribute("d", `M 20,${wy} Q 70,${wy - 12} 120,${wy} T 220,${wy} T 320,${wy} L 320,220 L 20,220 Z`);
   document.getElementById("tideWaveFront").setAttribute("d", `M 20,${wy + 8} Q 70,${wy - 4} 120,${wy + 8} T 220,${wy + 8} T 320,${wy + 8} L 320,220 L 20,220 Z`);
 
-  // 活人感气泡
+  // 活人感搭子 / 霸总对话气泡（经期推迟时自动换成安抚话术）
   const bubble = document.getElementById("companionBubble");
   bubble.classList.toggle("is-ceo", persona === "ceo");
-  document.getElementById("companionAvatar").textContent = persona === "ceo" ? "总" : "搭";
-  document.getElementById("companionName").textContent = persona === "ceo" ? "霸总管家" : "手帐搭子";
-  document.getElementById("companionTag").textContent = lastCompanionOverride ? "刚收到你的信号" : "今日悄悄话";
-  document.getElementById("companionMessage").textContent = lastCompanionOverride || s.note;
+  document.getElementById("companionAvatar").textContent = p.avatar;
+  document.getElementById("companionName").textContent = p.name;
+  document.getElementById("companionTag").textContent = lastCompanionOverride ? p.reactTag : p.defaultTag;
+  const defaultGreeting = !todayInPeriod && daysUntilNext < 0
+    ? p.lateHint(Math.abs(daysUntilNext))
+    : pSeason.greeting;
+  document.getElementById("companionMessage").textContent = lastCompanionOverride || defaultGreeting;
 
   // 主打卡按钮
   document.getElementById("quickBtnText").textContent = todayInPeriod
@@ -520,7 +796,7 @@ function renderTodayTab(stats, stealth, persona) {
   document.getElementById("sensitivityLinePath").setAttribute("d", paths.sensLine);
   updateWaveCursor(waveHoverRatio !== null ? waveHoverRatio : ratio, stats, stealth);
 
-  // 今日贴心小贴士
+  // 今日贴心小贴士（随人设变化）
   document.getElementById("dailyGuideCards").innerHTML = `
     <div class="tip-card">
       <div class="tip-badge">
@@ -528,7 +804,7 @@ function renderTodayTab(stats, stealth, persona) {
       </div>
       <div>
         <h4>今天适合怎么安排事</h4>
-        <p>${escapeHtml(s.work)}</p>
+        <p>${escapeHtml(pSeason.work)}</p>
       </div>
     </div>
     <div class="tip-card">
@@ -537,7 +813,7 @@ function renderTodayTab(stats, stealth, persona) {
       </div>
       <div>
         <h4>身体怎么动更舒服</h4>
-        <p>${escapeHtml(s.sport)}</p>
+        <p>${escapeHtml(pSeason.sport)}</p>
       </div>
     </div>
     <div class="tip-card highlight">
@@ -545,8 +821,8 @@ function renderTodayTab(stats, stealth, persona) {
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
       </div>
       <div>
-        <h4>给你兜底的一句话</h4>
-        <p>${escapeHtml(s.note)}</p>
+        <h4>${escapeHtml(p.hugTitle)}</h4>
+        <p>${escapeHtml(pSeason.hug)}</p>
       </div>
     </div>
   `;
@@ -762,16 +1038,17 @@ function renderToolkitTab(stats, stealth, persona) {
     btn.classList.toggle("selected", btn.getAttribute("data-partner-tone") === tone);
   });
 
+  const rData = RECEIPT_COPY[s.key]?.[tone] || RECEIPT_COPY.winter.gentle;
   document.getElementById("partnerReceiptPreview").innerHTML = `
     <div class="receipt-head">
-      <div class="receipt-store">TIDELOG 今日生存小票</div>
-      <div class="receipt-meta">${toDateStr(new Date())} · 周期第 ${stats.cycleDay} 天</div>
+      <div class="receipt-store">TIDELOG · ${escapeHtml(rData.title)}</div>
+      <div class="receipt-meta">${toDateStr(new Date())} · 周期第 ${stats.cycleDay} 天 · 剩余电量 ${s.battery}</div>
     </div>
-    <p class="receipt-quote">“${escapeHtml(s.note)}”</p>
+    <p class="receipt-quote">“${escapeHtml(rData.quote)}”</p>
     <div class="receipt-rows">
-      <div class="receipt-row"><strong>当前状态</strong><span>${escapeHtml(s.title)}</span></div>
-      <div class="receipt-row"><strong>今日建议</strong><span>${escapeHtml(s.work)}</span></div>
-      <div class="receipt-row"><strong>身体照顾</strong><span>${escapeHtml(s.sport)}</span></div>
+      <div class="receipt-row"><strong>投喂推荐</strong><span>${escapeHtml(rData.feeding)}</span></div>
+      <div class="receipt-row"><strong>今天宜做</strong><span>${escapeHtml(rData.dos)}</span></div>
+      <div class="receipt-row"><strong>避雷提醒</strong><span>${escapeHtml(rData.donts)}</span></div>
     </div>
     <div class="receipt-barcode">|||| ||| || |||| ||| TIDELOG</div>
   `;
@@ -966,13 +1243,33 @@ function switchSubTab(subId) {
   });
 }
 
+function triggerBubblePop() {
+  const bubble = document.getElementById("companionBubble");
+  if (!bubble) return;
+  bubble.classList.remove("pop");
+  void bubble.offsetWidth;
+  bubble.classList.add("pop");
+}
+
 function toggleTagForDate(dateStr, tagId) {
   if (!appState.logs[dateStr]) appState.logs[dateStr] = { tags: [], note: "" };
   const tags = appState.logs[dateStr].tags;
   const idx = tags.indexOf(tagId);
-  if (idx >= 0) tags.splice(idx, 1);
-  else tags.push(tagId);
-  saveState("已悄悄记下");
+  const adding = idx < 0;
+  if (adding) tags.push(tagId);
+  else tags.splice(idx, 1);
+
+  const persona = appState.settings.persona || "gentle";
+  let toastText = adding ? "已悄悄记下" : "已取消这个标记";
+  if (adding) {
+    const reply = pickSymptomReply(tagId, persona);
+    if (reply) {
+      lastCompanionOverride = reply;
+      toastText = persona === "ceo" ? "霸总已收到信号" : "搭子接住你的信号啦";
+    }
+  }
+  saveState(toastText);
+  if (adding && lastCompanionOverride) triggerBubblePop();
 }
 
 function bindEvents() {
@@ -1011,22 +1308,27 @@ function bindEvents() {
   document.getElementById("quickPeriodToggleBtn").addEventListener("click", () => {
     const todayStr = toDateStr(new Date());
     const stats = computeCycleStats(appState);
+    const persona = appState.settings.persona || "gentle";
+    const p = PERSONA_COPY[persona] || PERSONA_COPY.gentle;
     const inPeriod = isDateInLoggedPeriod(todayStr, stats.sortedCycles, stats.avgPeriodLen);
     if (inPeriod) {
       const latest = appState.cycles[appState.cycles.length - 1];
       if (latest) {
         if (latest.startDate === todayStr) {
           appState.cycles.pop();
+          lastCompanionOverride = null;
           saveState("已撤销今天的开始记录");
         } else {
           latest.endDate = addDays(todayStr, -1);
-          saveState("好耶，这次结束啦，慢慢回血！");
+          lastCompanionOverride = null;
+          saveState(p.endToast);
         }
       }
     } else {
       const dur = Number(appState.settings.defaultPeriodLen) || 5;
       appState.cycles.push({ id: "c_" + Date.now(), startDate: todayStr, endDate: addDays(todayStr, dur - 1), excluded: false });
-      saveState("记好啦，这几天好好照顾自己");
+      lastCompanionOverride = null;
+      saveState(p.startToast);
     }
   });
 
@@ -1212,6 +1514,22 @@ function bindEvents() {
       appState.settings.partnerTone = btn.getAttribute("data-partner-tone");
       saveState();
     });
+  });
+
+  document.getElementById("copyPartnerCardBtn").addEventListener("click", () => {
+    const stats = computeCycleStats(appState);
+    const s = stats.seasonInfo;
+    const tone = appState.settings.partnerTone || "gentle";
+    const rData = RECEIPT_COPY[s.key]?.[tone] || RECEIPT_COPY.winter.gentle;
+    const shareText = [
+      `【${rData.title} · 周期第 ${stats.cycleDay} 天 · 电量 ${s.battery}】`,
+      `“${rData.quote}”`,
+      `投喂推荐：${rData.feeding}`,
+      `今天宜做：${rData.dos}`,
+      `避雷提醒：${rData.donts}`
+    ].join("\n");
+    navigator.clipboard?.writeText(shareText);
+    showToast("小票文字版已复制，去微信粘贴发给 TA 吧");
   });
 
   // 我的：人设、皮肤、参数与备份
