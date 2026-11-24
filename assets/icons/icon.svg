@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 136" width="136" height="136">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D96B52"/>
+      <stop offset="55%" stop-color="#C85A42"/>
+      <stop offset="100%" stop-color="#7B6B8D"/>
+    </linearGradient>
+    <linearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDF9"/>
+      <stop offset="100%" stop-color="#F6EFE6"/>
+    </linearGradient>
+  </defs>
+  <rect width="136" height="136" rx="30" fill="url(#bgGrad)"/>
+  <circle cx="68" cy="68" r="46" fill="none" stroke="#FFFDF9" stroke-opacity="0.22" stroke-width="3" stroke-dasharray="6 4"/>
+  <!-- 新月与潮汐波浪组合 -->
+  <path d="M76 32C57.5 34.5 44 50.2 44 69.2C44 89.5 60.5 106 80.8 106C88.5 106 95.6 103.6 101.5 99.5C86.2 100.8 73.2 88.8 73.2 73.2C73.2 58.6 84.1 46.8 98.2 45.1C91.8 37.8 84.2 33.1 76 32Z" fill="url(#moonGrad)" opacity="0.95"/>
+  <path d="M32 88C42 82 52 82 62 88C72 94 82 94 92 88C98 84.5 103 83 108 84" fill="none" stroke="#FFFDF9" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="94" cy="40" r="4" fill="#F2C97D"/>
+</svg>

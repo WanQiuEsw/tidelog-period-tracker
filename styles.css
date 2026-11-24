@@ -1,0 +1,917 @@
+:root {
+  /* 温暖大地自然美学 (Aesop / Kinfolk Editorial Palette) */
+  --bg-primary: #FBF8F3;
+  --bg-secondary: #F3EDE2;
+  --bg-card: rgba(255, 253, 249, 0.86);
+  --bg-card-solid: #FFFDF9;
+  --text-primary: #2B2523;
+  --text-secondary: #6E655F;
+  --text-muted: #9E948C;
+  --border-subtle: rgba(110, 101, 95, 0.14);
+  --border-focus: rgba(200, 109, 81, 0.45);
+
+  /* 身体四季主题色 */
+  --season-winter: #C86D51;       /* 冬季 / 月经期：陶土暖红 */
+  --season-winter-soft: #F9EBE6;
+  --season-spring: #5B8266;       /* 春季 / 卵泡期：鼠尾草绿 */
+  --season-spring-soft: #E8F0EA;
+  --season-summer: #D49B4B;       /* 夏季 / 排卵期：暖阳琥珀 */
+  --season-summer-soft: #FAF1E2;
+  --season-autumn: #8C6D83;       /* 秋季 / 黄体期：暮色紫灰 */
+  --season-autumn-soft: #F1EBF0;
+
+  --accent: var(--season-winter);
+  --accent-soft: var(--season-winter-soft);
+  --shadow-sm: 0 4px 16px -2px rgba(43, 37, 35, 0.05);
+  --shadow-md: 0 12px 32px -4px rgba(43, 37, 35, 0.08);
+  --shadow-lg: 0 24px 48px -12px rgba(43, 37, 35, 0.14);
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  --font-serif: "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+/* 防社死「月相暗语模式」暗夜星辰主题 */
+body.camouflage-mode {
+  --bg-primary: #13161C;
+  --bg-secondary: #1B2028;
+  --bg-card: rgba(30, 36, 46, 0.85);
+  --bg-card-solid: #1E242E;
+  --text-primary: #EAE6DF;
+  --text-secondary: #9CA3AF;
+  --text-muted: #646D7A;
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --season-winter: #7C92B8;
+  --season-winter-soft: rgba(124, 146, 184, 0.16);
+  --season-spring: #6CA388;
+  --season-spring-soft: rgba(108, 163, 136, 0.16);
+  --season-summer: #D9B26F;
+  --season-summer-soft: rgba(217, 178, 111, 0.16);
+  --season-autumn: #A486B0;
+  --season-autumn-soft: rgba(164, 134, 176, 0.16);
+  --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background-color 0.35s ease, color 0.35s ease;
+  background-image: 
+    radial-gradient(circle at 12% 10%, var(--season-winter-soft) 0%, transparent 38%),
+    radial-gradient(circle at 88% 22%, var(--season-summer-soft) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, var(--season-spring-soft) 0%, transparent 45%);
+  background-attachment: fixed;
+}
+
+/* 顶部导航栏 */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  background: rgba(251, 248, 243, 0.78);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.35s ease;
+}
+
+body.camouflage-mode .topbar {
+  background: rgba(19, 22, 28, 0.82);
+}
+
+.topbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--season-winter), var(--season-summer));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 17px;
+  box-shadow: 0 4px 12px rgba(200, 109, 81, 0.25);
+}
+
+.brand-text h1 {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.brand-text p {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 伪装模式与隐私徽章按钮 */
+.pill-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.pill-switch:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.pill-switch.active {
+  background: var(--season-winter-soft);
+  border-color: var(--season-winter);
+  color: var(--season-winter);
+}
+
+.privacy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--season-spring-soft);
+  color: var(--season-spring);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 主布局容器 */
+.app-container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 100px;
+}
+
+/* 视图导航 Tabs */
+.nav-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  background: var(--bg-secondary);
+  padding: 6px;
+  border-radius: var(--radius-pill);
+  width: fit-content;
+  border: 1px solid var(--border-subtle);
+}
+
+.nav-tab {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 9px 20px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.nav-tab:hover {
+  color: var(--text-primary);
+}
+
+.nav-tab.active {
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+/* 双栏桌面响应式网格 */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 920px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .topbar-inner {
+    padding: 12px 16px;
+  }
+  .app-container {
+    padding: 18px 16px 110px;
+  }
+  .privacy-badge span.hide-mobile {
+    display: none;
+  }
+  .nav-tabs {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: space-between;
+  }
+  .nav-tab {
+    padding: 8px 12px;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+}
+
+/* 通用美学卡片 */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 26px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-subtitle {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* 1. 身体四季能量罗盘主卡片 */
+.compass-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.season-tag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.season-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.confidence-pill {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.compass-visual-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 12px 0 22px;
+  position: relative;
+}
+
+.compass-svg-box {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compass-center-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 28px;
+  pointer-events: none;
+}
+
+.compass-day-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.compass-day-num {
+  font-family: var(--font-serif);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 4px 0;
+  color: var(--text-primary);
+}
+
+.compass-season-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.compass-next-hint {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  max-width: 150px;
+  line-height: 1.35;
+}
+
+/* 主打卡按钮组 */
+.primary-action-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 14px 22px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--season-winter);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px -4px rgba(200, 109, 81, 0.42);
+  transition: all 0.22s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.btn-secondary {
+  padding: 13px 18px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
+/* 激素双曲线小图 */
+.hormone-strip {
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.hormone-strip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.hormone-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11.5px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+/* 每日三维能量指南卡片 */
+.guide-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.guide-item {
+  padding: 15px 18px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.guide-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.guide-content h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 3px;
+  color: var(--text-primary);
+}
+
+.guide-content p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.guide-reassurance {
+  background: linear-gradient(135deg, var(--season-winter-soft), var(--season-autumn-soft));
+  border-color: transparent;
+}
+
+/* 3秒胶囊症状面板 */
+.symptom-group {
+  margin-bottom: 18px;
+}
+
+.symptom-group:last-child {
+  margin-bottom: 0;
+}
+
+.symptom-group-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.capsule-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.capsule-btn {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.capsule-btn:hover {
+  border-color: var(--season-winter);
+}
+
+.capsule-btn.selected {
+  background: var(--season-winter);
+  color: #fff;
+  border-color: var(--season-winter);
+  font-weight: 500;
+  box-shadow: 0 4px 10px rgba(200, 109, 81, 0.25);
+}
+
+.daily-note-input {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  resize: none;
+}
+
+.daily-note-input:focus {
+  outline: none;
+  border-color: var(--season-winter);
+}
+
+/* 四季智能日历视图 */
+.calendar-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.month-nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.month-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  cursor: pointer;
+  position: relative;
+  border: 1px solid transparent;
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  transition: all 0.16s ease;
+}
+
+.cal-day:hover {
+  border-color: var(--season-winter);
+}
+
+.cal-day.empty {
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
+}
+
+.cal-day.is-today {
+  border: 1.5px solid var(--text-primary);
+  font-weight: 700;
+}
+
+.cal-day.selected-day {
+  box-shadow: 0 0 0 2px var(--season-winter);
+}
+
+/* 日历生理期状态颜色 */
+.cal-day.is-period {
+  background: var(--season-winter);
+  color: #fff;
+  font-weight: 600;
+}
+
+.cal-day.is-predicted-period {
+  background: var(--season-winter-soft);
+  color: var(--season-winter);
+  border: 1.5px dashed var(--season-winter);
+  font-weight: 600;
+}
+
+.cal-day.is-ovulation {
+  background: var(--season-summer-soft);
+  color: var(--season-summer);
+  border: 1px solid rgba(212, 155, 75, 0.45);
+}
+
+.cal-day-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+/* 场景工具箱：妇科门诊就医小抄 (Doctor's Mode) */
+.doctor-sheet {
+  background: #FFFFFF;
+  color: #1A1A1A;
+  border: 2px solid #2B2523;
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-sheet-header {
+  border-bottom: 2px solid #1A1A1A;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.doctor-sheet-header h3 {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  color: #1A1A1A;
+}
+
+.doctor-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.doctor-metric-box {
+  background: #F7F6F2;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border-left: 4px solid #C86D51;
+}
+
+.doctor-metric-label {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.doctor-metric-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+}
+
+.doctor-metric-sub {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.doctor-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
+.doctor-history-table th,
+.doctor-history-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #E5E5E5;
+  color: #222;
+}
+
+.doctor-history-table th {
+  font-weight: 600;
+  color: #555;
+  background: #FAFAFA;
+}
+
+/* 伴侣关怀卡片预览 */
+.partner-card-preview {
+  background: linear-gradient(145deg, var(--bg-card-solid), var(--season-winter-soft));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  margin: 14px 0;
+  position: relative;
+}
+
+.partner-card-quote {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  margin: 12px 0 16px;
+}
+
+.partner-dos-donts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.partner-box {
+  background: var(--bg-card);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+/* 撞期测算器与表单 */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.input-field {
+  flex: 1;
+  min-width: 160px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+}
+
+/* 隐藏非当前 Tab 视图 */
+.tab-panel {
+  display: none;
+  animation: fadeIn 0.25s ease;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 轻提示 Toast */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #2B2523;
+  color: #FFFDF9;
+  padding: 12px 22px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 100;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* 弹窗 Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 17, 0.45);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 90;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal-dialog {
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  max-width: 480px;
+  width: 100%;
+  padding: 26px;
+  box-shadow: var(--shadow-lg);
+}
