@@ -2,392 +2,637 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>潮汐历 TideLog · 女性身体四季与周期能量罗盘</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#FAF6F0" id="metaThemeColor" />
+  <title>潮汐历 · 你的温柔身体手帐</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body>
-  <!-- 顶部导航栏：品牌、防社死月相暗语开关、100%本地隐私徽章 -->
+<body data-theme="paper">
+  <!-- 柔和纸纹与随季节流动的背景光晕 -->
+  <div class="ambient-bg" aria-hidden="true"></div>
+
+  <!-- 顶部极简导航栏 -->
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <div class="brand-mark" id="brandMark">汐</div>
+        <div class="brand-mark" id="brandMark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+        </div>
         <div class="brand-text">
-          <h1 id="brandTitle">潮汐历 TideLog</h1>
-          <p id="brandSubtitle">去粉红化 · 身体四季与荷尔蒙能量天文台</p>
+          <h1 id="brandTitle">潮汐历</h1>
+          <p id="brandSubtitle">只存你设备里的小手帐</p>
         </div>
       </div>
 
+      <!-- 桌面端居中主导航 -->
+      <nav class="desktop-nav" aria-label="主导航">
+        <button class="nav-pill active" data-tab="tab-today" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <span>今日</span>
+        </button>
+        <button class="nav-pill" data-tab="tab-calendar" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span>日历</span>
+        </button>
+        <button class="nav-pill" data-tab="tab-toolkit" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"/></svg>
+          <span>工具箱</span>
+        </button>
+        <button class="nav-pill" data-tab="tab-mine" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
+          <span>我的</span>
+        </button>
+      </nav>
+
+      <!-- 顶部右侧：一键切人设 + 防窥天气模式 -->
       <div class="topbar-actions">
-        <div class="privacy-badge" title="零服务器上传，所有数据仅保存在您的浏览器本地">
-          <span>🔒</span>
-          <span class="hide-mobile">Local-First 本地零上传</span>
-        </div>
-        <button class="pill-switch" id="camouflageBtn" type="button" title="在办公室或地铁开启，隐藏所有敏感生理词汇">
-          <span id="camouflageIcon">🌙</span>
-          <span id="camouflageText">月相暗语模式：关</span>
+        <button class="persona-toggle" id="personaQuickBtn" type="button" title="切换陪伴语气：温柔手帐搭子 / 霸总模式">
+          <span class="persona-dot" id="personaDot"></span>
+          <span id="personaQuickText">温柔搭子</span>
+        </button>
+        <button class="icon-btn" id="stealthBtn" type="button" aria-label="切换防窥天气手帐模式" title="防窥天气手帐：在工位或地铁隐藏所有生理词">
+          <svg id="stealthIconSvg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+          </svg>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="app-container">
-    <!-- 核心功能导航 Tabs -->
-    <nav class="nav-tabs" aria-label="功能导航">
-      <button class="nav-tab active" data-tab="tab-compass" type="button">
-        <span>🧭</span>
-        <span data-i18n="nav_compass">身体四季罗盘</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-calendar" type="button">
-        <span>📅</span>
-        <span data-i18n="nav_calendar">四季日历与规律</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-doctor" type="button">
-        <span>🩺</span>
-        <span data-i18n="nav_doctor">妇科就医小抄</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-toolkit" type="button">
-        <span>💌</span>
-        <span data-i18n="nav_toolkit">伴侣卡 & 撞期测算</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-privacy" type="button">
-        <span>🛡️</span>
-        <span data-i18n="nav_privacy">隐私保险箱</span>
-      </button>
-    </nav>
+  <main class="app-shell">
+    <!-- ==================== TAB 1: 今日 ==================== -->
+    <section id="tab-today" class="tab-panel active">
+      <div class="today-grid">
+        <!-- 左/上栏：潮汐呼吸球 + 搭子/霸总实时对话 + 主操作 + 互动曲线 -->
+        <div class="stack-col">
+          <article class="card hero-card">
+            <div class="hero-meta-row">
+              <span class="phase-chip" id="currentPhaseChip">经期 · 合法躺平</span>
+              <span class="rhythm-chip" id="regularityChip">最近挺规律 · 误差±1天</span>
+            </div>
 
-    <!-- TAB 1: 身体四季能量罗盘 & 3秒胶囊症状打卡 -->
-    <section id="tab-compass" class="tab-panel active">
-      <div class="dashboard-grid">
-        <!-- 左栏：身体四季罗盘主视觉 + 激素双曲线 + 今日能量指南 -->
-        <div class="card compass-card">
-          <div class="season-tag-row">
-            <span class="season-badge" id="currentSeasonBadge">❄️ 身体冬季 · 休养内省期</span>
-            <span class="confidence-pill" id="predictionConfidence">弹性预测置信度 89%</span>
-          </div>
+            <!-- 呼吸感潮汐圆环 -->
+            <div class="orb-stage">
+              <div class="orb-frame">
+                <svg class="orb-svg" viewBox="0 0 240 240" aria-label="周期圆环">
+                  <defs>
+                    <clipPath id="innerOrbClip">
+                      <circle cx="120" cy="120" r="82" />
+                    </clipPath>
+                  </defs>
+                  <!-- 四季分段柔和底环 -->
+                  <circle cx="120" cy="120" r="98" fill="none" stroke="var(--ring-track)" stroke-width="11" />
+                  <circle id="seasonArcWinter" cx="120" cy="120" r="98" fill="none" stroke="var(--season-winter)" stroke-opacity="0.22" stroke-width="11" transform="rotate(-90 120 120)" />
+                  <circle id="seasonArcSummer" cx="120" cy="120" r="98" fill="none" stroke="var(--season-summer)" stroke-opacity="0.22" stroke-width="11" transform="rotate(-90 120 120)" />
+                  <!-- 当前进度光环 -->
+                  <circle id="cycleProgressRing" cx="120" cy="120" r="98" fill="none"
+                    stroke="var(--active-season)" stroke-width="11"
+                    stroke-linecap="round"
+                    stroke-dasharray="615.75" stroke-dashoffset="420"
+                    transform="rotate(-90 120 120)" />
+                  <!-- 内圆柔和流动潮汐水波 -->
+                  <g clip-path="url(#innerOrbClip)">
+                    <circle cx="120" cy="120" r="82" fill="var(--orb-inner-bg)" />
+                    <path id="tideWaveBack" class="tide-wave tide-wave-back" d="M 20,152 Q 70,138 120,152 T 220,152 T 320,152 L 320,220 L 20,220 Z" fill="var(--active-season-soft)" />
+                    <path id="tideWaveFront" class="tide-wave tide-wave-front" d="M 20,160 Q 70,148 120,160 T 220,160 T 320,160 L 320,220 L 20,220 Z" fill="var(--active-season)" fill-opacity="0.16" />
+                  </g>
+                  <!-- 当前天数游标圆点 -->
+                  <circle id="cycleDotIndicator" cx="120" cy="22" r="7.5" fill="var(--bg-card-solid)" stroke="var(--active-season)" stroke-width="3.5" />
+                </svg>
 
-          <!-- 呼吸感 SVG 周期圆环 -->
-          <div class="compass-visual-wrap">
-            <div class="compass-svg-box">
-              <svg width="250" height="250" viewBox="0 0 250 250" aria-label="周期四季圆环">
-                <!-- 四季分段底环 -->
-                <circle cx="125" cy="125" r="102" fill="none" stroke="var(--border-subtle)" stroke-width="14" />
-                <!-- 动态进度环 -->
-                <circle id="cycleProgressRing" cx="125" cy="125" r="102" fill="none"
-                  stroke="var(--season-winter)" stroke-width="14"
-                  stroke-linecap="round"
-                  stroke-dasharray="640.88" stroke-dashoffset="480"
-                  transform="rotate(-90 125 125)"
-                  style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease;" />
-                <!-- 当前天数指示光点 -->
-                <circle id="cycleDotIndicator" cx="125" cy="23" r="8" fill="#FFFDF9" stroke="var(--season-winter)" stroke-width="4" />
+                <div class="orb-center">
+                  <span class="orb-eyebrow" id="cycleDayLabel">当前周期</span>
+                  <div class="orb-big-num" id="cycleDayNum">第 1 天</div>
+                  <div class="orb-phase-name" id="compassPhaseTitle">合法躺平期</div>
+                  <div class="orb-countdown" id="compassNextHint">离下次大概还有 10 天</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 活人感对话气泡（会随症状点击实时变化） -->
+            <div class="companion-bubble" id="companionBubble">
+              <div class="companion-avatar" id="companionAvatar">搭</div>
+              <div class="companion-body">
+                <div class="companion-name-row">
+                  <span class="companion-name" id="companionName">手帐搭子</span>
+                  <span class="companion-tag" id="companionTag">今日悄悄话</span>
+                </div>
+                <p class="companion-text" id="companionMessage">今天不用逼自己满格运转，按舒服的节奏慢慢来就好。</p>
+              </div>
+            </div>
+
+            <!-- 拇指友好主操作区 -->
+            <div class="hero-actions">
+              <button class="btn-primary btn-lg" id="quickPeriodToggleBtn" type="button">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                <span id="quickBtnText">今天来了</span>
+              </button>
+              <button class="btn-soft" id="openRetroModalBtn" type="button">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                <span>补记/改日期</span>
+              </button>
+              <button class="btn-soft btn-relief-jump" id="jumpReliefBtn" type="button" title="痛经或烦躁时点这里">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                <span>有点难受</span>
+              </button>
+            </div>
+          </article>
+
+          <!-- 可互动的能量波浪卡 -->
+          <article class="card wave-card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title" id="waveCardTitle">这个月的精力小波浪</h2>
+                <p class="section-sub" id="wavePreviewLabel">点按或滑动波浪，看看每一天大概是什么状态</p>
+              </div>
+              <div class="wave-legend">
+                <span><i class="dot" style="background:var(--season-spring)"></i>精力值</span>
+                <span><i class="dot" style="background:var(--season-autumn)"></i>敏感度</span>
+              </div>
+            </div>
+
+            <div class="wave-interactive-wrap" id="waveInteractiveWrap">
+              <svg id="hormoneWaveSvg" width="100%" height="92" viewBox="0 0 400 92" preserveAspectRatio="none" role="img" aria-label="周期精力与敏感度变化曲线">
+                <defs>
+                  <linearGradient id="energyFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--season-spring)" stop-opacity="0.22" />
+                    <stop offset="100%" stop-color="var(--season-spring)" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <!-- 柔和参考基线 -->
+                <line x1="0" y1="78" x2="400" y2="78" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="3 4" />
+                <path id="energyAreaPath" fill="url(#energyFill)" />
+                <path id="energyLinePath" fill="none" stroke="var(--season-spring)" stroke-width="2.4" stroke-linecap="round" />
+                <path id="sensitivityLinePath" fill="none" stroke="var(--season-autumn)" stroke-width="2.1" stroke-dasharray="4 4" stroke-linecap="round" />
+                <!-- 贴合曲线的游标线和双光点 -->
+                <line id="hormoneCursorLine" x1="40" y1="8" x2="40" y2="84" stroke="var(--active-season)" stroke-width="1.6" stroke-dasharray="2 2" />
+                <circle id="energyCursorDot" cx="40" cy="60" r="5" fill="var(--bg-card-solid)" stroke="var(--season-spring)" stroke-width="2.6" />
+                <circle id="sensitivityCursorDot" cx="40" cy="65" r="4.5" fill="var(--bg-card-solid)" stroke="var(--season-autumn)" stroke-width="2.4" />
               </svg>
-              <div class="compass-center-text">
-                <span class="compass-day-label" id="cycleDayLabel">当前周期</span>
-                <div class="compass-day-num" id="cycleDayNum">Day 1</div>
-                <div class="compass-season-title" id="compassSeasonTitle">冬季 · 经期来潮</div>
-                <div class="compass-next-hint" id="compassNextHint">预计下次潮汐：12月18日 ~ 12月20日</div>
+              <div class="wave-axis">
+                <span>经期开头</span>
+                <span>回血期</span>
+                <span>高光日</span>
+                <span>经前预警</span>
               </div>
             </div>
+          </article>
 
-            <!-- 一键极速打卡按钮 -->
-            <div class="primary-action-row">
-              <button class="btn-primary" id="quickPeriodToggleBtn" type="button">
-                <span id="quickBtnIcon">🩸</span>
-                <span id="quickBtnText">今日大姨妈来了</span>
-              </button>
-              <button class="btn-secondary" id="openRetroModalBtn" type="button" title="补录或调整历史周期">
-                <span>✍️ 补录/修改周期</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 雌激素 & 孕酮双曲线可视化条 -->
-          <div class="hormone-strip">
-            <div class="hormone-strip-header">
-              <span id="hormoneStripTitle">当前荷尔蒙节律曲线</span>
-              <div class="hormone-legend">
-                <span><i class="legend-dot" style="background: var(--season-spring);"></i>雌激素 (精力/社交)</span>
-                <span><i class="legend-dot" style="background: var(--season-autumn);"></i>孕酮 (内省/体温)</span>
-              </div>
-            </div>
-            <svg width="100%" height="68" viewBox="0 0 400 68" preserveAspectRatio="none">
-              <!-- 雌激素曲线 -->
-              <path d="M 0,56 C 55,54 95,42 155,10 C 185,10 205,46 250,32 C 305,18 355,48 400,56"
-                    fill="none" stroke="var(--season-spring)" stroke-width="2.5" stroke-linecap="round" />
-              <!-- 孕酮曲线 -->
-              <path d="M 0,58 C 90,58 160,57 205,50 C 260,35 300,10 335,14 C 365,18 385,48 400,58"
-                    fill="none" stroke="var(--season-autumn)" stroke-width="2.5" stroke-dasharray="4 3" stroke-linecap="round" />
-              <!-- 当前位置游标线 -->
-              <line id="hormoneCursorLine" x1="40" y1="4" x2="40" y2="64" stroke="var(--season-winter)" stroke-width="2" />
-              <circle id="hormoneCursorDot" cx="40" cy="34" r="5" fill="var(--season-winter)" />
-            </svg>
-          </div>
-
-          <!-- 今日三维能量指南 (工作/运动/反焦虑情绪抱抱卡) -->
-          <div class="guide-cards" id="dailyGuideCards">
-            <!-- JS 动态渲染 -->
-          </div>
+          <!-- 今日贴心小贴士（工作 / 身体 / 悄悄话） -->
+          <div class="tips-grid" id="dailyGuideCards"></div>
         </div>
 
-        <!-- 右栏：3秒胶囊症状面板 & 每日身体笔记 -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">
-                <span>🌿</span>
-                <span id="loggerCardTitle">3秒身体胶囊记录</span>
-              </h2>
-              <p class="card-subtitle" id="selectedDateDisplay">正在记录：今天</p>
+        <!-- 右/下栏：3秒随手记 + 个人身体规律发现 -->
+        <div class="stack-col">
+          <!-- 自动发现的个人小规律 -->
+          <article class="card insight-banner" id="personalInsightCard" style="display: none;"></article>
+
+          <!-- 3秒随手记面板 -->
+          <article class="card logger-card">
+            <div class="card-head">
+              <div>
+                <h2 class="section-title" id="loggerCardTitle">今天感觉怎么样？</h2>
+                <p class="section-sub" id="selectedDateDisplay">正在记：今天（点完自动存）</p>
+              </div>
+              <button class="chip-action" id="toggleIntimateTagsBtn" type="button">隐藏私密项</button>
             </div>
-            <button class="btn-secondary" id="toggleIntimateTagsBtn" type="button" style="padding: 6px 12px; font-size: 12px;">
-              👁️ 隐藏私密标签
-            </button>
-          </div>
 
-          <div id="capsuleGroupsContainer">
-            <!-- JS 动态渲染胶囊分类与标签 -->
-          </div>
+            <div id="capsuleGroupsContainer" class="capsule-groups"></div>
 
-          <textarea
-            id="dailyNoteInput"
-            class="daily-note-input"
-            rows="3"
-            placeholder="写下今天身体的微妙感受（例如：喝了冰美式后小腹微凉、下午开会注意力很集中... 仅保存在本地）"
-          ></textarea>
+            <div class="note-box-wrap">
+              <label for="dailyNoteInput" class="note-label" id="dailyNoteLabel">随手记一句（吐槽或小确幸都行）</label>
+              <textarea
+                id="dailyNoteInput"
+                class="journal-textarea"
+                rows="3"
+                placeholder="比如：下午突然好想喝热红豆汤、今天开会脑子转得超快、有点累准备十点躺平…"
+              ></textarea>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- TAB 2: 四季色彩日历与身体规律洞察 -->
+    <!-- ==================== TAB 2: 日历 ==================== -->
     <section id="tab-calendar" class="tab-panel">
-      <div class="dashboard-grid">
-        <div class="card">
-          <div class="calendar-header-controls">
-            <button class="month-nav-btn" id="prevMonthBtn" type="button" aria-label="上个月">‹</button>
-            <div class="month-title" id="calendarMonthTitle">2026年 11月</div>
-            <button class="month-nav-btn" id="nextMonthBtn" type="button" aria-label="下个月">›</button>
-          </div>
-
-          <div class="calendar-weekdays">
-            <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
-          </div>
-          <div class="calendar-grid" id="calendarGrid">
-            <!-- JS 动态生成日历格子 -->
-          </div>
-
-          <div class="calendar-legend">
-            <span class="cal-legend-item">
-              <i class="cal-swatch" style="background: var(--season-winter);"></i>
-              <span data-i18n="legend_period">实录经期 (冬季)</span>
-            </span>
-            <span class="cal-legend-item">
-              <i class="cal-swatch" style="background: var(--season-winter-soft); border: 1.5px dashed var(--season-winter);"></i>
-              <span data-i18n="legend_predicted">弹性预测窗口</span>
-            </span>
-            <span class="cal-legend-item">
-              <i class="cal-swatch" style="background: var(--season-summer-soft); border: 1px solid var(--season-summer);"></i>
-              <span data-i18n="legend_ovulation">高能黄金期 (夏季)</span>
-            </span>
-            <span class="cal-legend-item">
-              <i class="cal-swatch" style="border-radius:50%; width:7px; height:7px; background: var(--text-primary);"></i>
-              <span>已记症状胶囊</span>
-            </span>
-          </div>
-        </div>
-
-        <!-- 右侧：周期规律自检与历史列表 -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">📊 身体节律与症状自检报告</h2>
-              <p class="card-subtitle">自动过滤单次偶发熬夜/压力异常，动态校准预测窗口</p>
+      <div class="calendar-layout">
+        <div class="stack-col">
+          <article class="card calendar-card">
+            <div class="calendar-toolbar">
+              <button class="icon-btn sm" id="prevMonthBtn" type="button" aria-label="上个月">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div class="month-heading">
+                <span id="calendarMonthTitle">2026年 11月</span>
+                <button class="jump-today-btn" id="jumpTodayBtn" type="button">回今天</button>
+              </div>
+              <button class="icon-btn sm" id="nextMonthBtn" type="button" aria-label="下个月">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
             </div>
-          </div>
 
-          <div class="doctor-metrics-grid" id="insightMetricsGrid">
-            <!-- JS 动态生成统计指标 -->
-          </div>
+            <div class="calendar-weekdays">
+              <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
 
-          <h3 style="font-size: 14px; font-weight: 600; margin: 18px 0 10px; color: var(--text-secondary);">
-            近期周期历史记录（可勾选“排除异常”避免污染预测算法）
-          </h3>
-          <div id="cycleHistoryList" style="display: flex; flex-direction: column; gap: 10px;">
-            <!-- JS 渲染历史周期列表 -->
-          </div>
+            <div class="calendar-legend">
+              <span class="legend-item"><i class="swatch solid-winter"></i><span id="legendPeriodText">记过的经期</span></span>
+              <span class="legend-item"><i class="swatch dashed-winter"></i><span id="legendPredText">预计会来</span></span>
+              <span class="legend-item"><i class="swatch soft-summer"></i><span id="legendGoldText">高光日</span></span>
+              <span class="legend-item"><i class="swatch dot-log"></i><span>有手帐</span></span>
+              <span class="legend-item"><i class="swatch dot-event"></i><span>大事记</span></span>
+            </div>
+          </article>
+
+          <!-- 原地内联日期记录抽屉（点哪天直接记哪天） -->
+          <article class="card day-drawer-card" id="calendarDayDrawer">
+            <!-- JS 动态渲染选中日期的快捷打卡与笔记 -->
+          </article>
+        </div>
+
+        <div class="stack-col">
+          <!-- 周期规律小总结 -->
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">你的周期节奏</h2>
+                <p class="section-sub">偶尔熬夜或压力大晚几天很正常，可以在下面勾掉不计入平均</p>
+              </div>
+            </div>
+            <div class="stats-grid" id="insightMetricsGrid"></div>
+
+            <div class="history-section">
+              <div class="history-head">
+                <h3>最近记过的几次</h3>
+                <button class="chip-action" id="calendarAddRetroBtn" type="button">+ 补记一次</button>
+              </div>
+              <div id="cycleHistoryList" class="history-list"></div>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- TAB 3: 妇科门诊就医小抄 (Doctor's Card) -->
-    <section id="tab-doctor" class="tab-panel">
-      <div class="card" style="max-width: 820px; margin: 0 auto;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">🩺 妇科门诊就医一键小抄 (Doctor's Card)</h2>
-            <p class="card-subtitle">看妇科不再紧张忘词，白底大字临床结构化摘要，直接递给医生看</p>
-          </div>
-          <button class="btn-secondary" id="copyDoctorSummaryBtn" type="button">📋 复制纯文本病历摘要</button>
-        </div>
-
-        <div class="doctor-sheet" id="doctorSheetContent">
-          <!-- JS 动态渲染临床摘要卡 -->
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: 伴侣关怀卡片 & 重要日程撞期测算器 -->
+    <!-- ==================== TAB 3: 工具箱 ==================== -->
     <section id="tab-toolkit" class="tab-panel">
-      <div class="dashboard-grid">
-        <!-- 伴侣/好友轻协同状态名片 -->
-        <div class="card">
-          <div class="card-header">
+      <!-- 顶部子功能分段切换 -->
+      <div class="subtab-bar" role="tablist" aria-label="工具箱子模块">
+        <button class="subtab-btn active" data-subtab="sub-cards" type="button">小票与晒图</button>
+        <button class="subtab-btn" data-subtab="sub-relief" type="button">电子布洛芬</button>
+        <button class="subtab-btn" data-subtab="sub-events" type="button">大事记撞期</button>
+        <button class="subtab-btn" data-subtab="sub-doctor" type="button">看病小抄</button>
+      </div>
+
+      <!-- 子面板 1：今日生存小票（发对象/闺蜜）& 月度身体切片晒图卡 -->
+      <div id="sub-cards" class="subtab-panel active">
+        <div class="two-col-grid">
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">今日生存小票</h2>
+                <p class="section-sub">不用对方下 App，存成一张便利店小票图直接甩微信</p>
+              </div>
+            </div>
+
+            <div class="tone-pills" id="receiptTonePills">
+              <button class="capsule-btn selected" data-partner-tone="gentle" type="button">温柔搭子风</button>
+              <button class="capsule-btn" data-partner-tone="ceo" type="button">霸总下令风</button>
+              <button class="capsule-btn" data-partner-tone="witty" type="button">发疯梗王风</button>
+            </div>
+
+            <!-- 复古便利店小票预览 -->
+            <div class="receipt-paper" id="partnerReceiptPreview"></div>
+
+            <div class="action-pair">
+              <button class="btn-primary" id="downloadReceiptBtn" type="button">保存小票图片</button>
+              <button class="btn-soft" id="copyPartnerCardBtn" type="button">复制文字版</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">月度身体切片卡</h2>
+                <p class="section-sub">隐私脱敏（不露具体日期），适合发小红书、朋友圈或 X 留念</p>
+              </div>
+            </div>
+
+            <div class="slice-poster-preview" id="monthlySlicePreview"></div>
+
+            <div class="action-pair">
+              <button class="btn-primary" id="downloadSliceBtn" type="button">保存 3:4 晒图海报</button>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- 子面板 2：电子布洛芬急救角 -->
+      <div id="sub-relief" class="subtab-panel">
+        <div class="two-col-grid">
+          <!-- 4-7-8 呼吸引导 + 实操自救 -->
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">先缓一口气 · 4-7-8 放松呼吸</h2>
+                <p class="section-sub">小腹发紧或情绪上头时，跟着圆球慢慢呼吸 30 秒</p>
+              </div>
+            </div>
+
+            <div class="breath-stage">
+              <div class="breath-orb" id="breathOrb">
+                <div class="breath-core">
+                  <span class="breath-phase" id="breathPhaseText">准备好了吗</span>
+                  <span class="breath-count" id="breathCountText">点下面开始</span>
+                </div>
+              </div>
+              <button class="btn-primary" id="toggleBreathBtn" type="button">开始跟着呼吸</button>
+            </div>
+
+            <div class="relief-tips-list" id="reliefTipsList"></div>
+          </article>
+
+          <!-- 情绪碎纸机 / 丢进海里 -->
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">情绪树洞 · 写完丢进海里</h2>
+                <p class="section-sub">烦透了、委屈了、想骂人都可以写在这，发泄完一键让潮水冲走</p>
+              </div>
+            </div>
+
+            <div class="vent-box-wrap" id="ventPaperBox">
+              <textarea
+                id="ventTextarea"
+                class="journal-textarea vent-textarea"
+                rows="6"
+                placeholder="在这里尽情吐槽：谁又惹你生气了、肚子怎么这么痛、不想上班了……写完可以丢进海里，不留一点痕迹。"
+              ></textarea>
+            </div>
+
+            <div class="action-pair">
+              <button class="btn-primary" id="tossToSeaBtn" type="button">丢进海里冲走</button>
+              <button class="btn-soft" id="saveVentToNoteBtn" type="button">存进今日手帐</button>
+            </div>
+
+            <p class="vent-reply" id="ventReplyText"></p>
+          </article>
+        </div>
+      </div>
+
+      <!-- 子面板 3：未来大事记撞期 -->
+      <div id="sub-events" class="subtab-panel">
+        <div class="two-col-grid">
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">记下重要日子，提前看撞不撞期</h2>
+                <p class="section-sub">海岛游、考试、演唱会、婚礼……存下来后会自动标在日历上</p>
+              </div>
+            </div>
+
+            <div class="event-form">
+              <input type="text" id="eventNameInput" class="input-field" placeholder="比如：三亚看海 / 考研初试 / 闺蜜婚礼" />
+              <input type="date" id="eventDateInput" class="input-field" />
+              <button class="btn-primary" id="addEventBtn" type="button">加到大事记</button>
+            </div>
+
+            <div id="savedEventsList" class="events-list"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">选中日程的准备清单</h2>
+                <p class="section-sub">点击左侧任意大事记，看当天的身体预报和打包建议</p>
+              </div>
+            </div>
+            <div id="eventCollisionResult"></div>
+          </article>
+        </div>
+      </div>
+
+      <!-- 子面板 4：妇科门诊看病小抄 -->
+      <div id="sub-doctor" class="subtab-panel">
+        <article class="card doctor-wrapper">
+          <div class="card-head">
             <div>
-              <h2 class="card-title">💌 伴侣 / 闺蜜今日行动指南卡</h2>
-              <p class="card-subtitle">无需对方下载 App，把激素状态翻译成对方听得懂的行动指令</p>
+              <h2 class="section-title">妇科看病小抄</h2>
+              <p class="section-sub">挂号问诊不紧张忘词，白底大字清清楚楚，直接递给医生看或存成图</p>
+            </div>
+            <div class="action-pair inline">
+              <button class="btn-primary sm" id="downloadDoctorPngBtn" type="button">存成高清图</button>
+              <button class="btn-soft sm" id="copyDoctorSummaryBtn" type="button">复制文字</button>
             </div>
           </div>
 
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <button class="capsule-btn selected" data-partner-tone="science" type="button">🔬 温和科学风</button>
-            <button class="capsule-btn" data-partner-tone="witty" type="button">😼 傲娇幽默风</button>
-            <button class="capsule-btn" data-partner-tone="minimal" type="button">⚡ 极简指令风</button>
+          <div class="doctor-q-block">
+            <span class="note-label">勾选这次想顺便问医生的问题（会自动写进小抄里）：</span>
+            <div class="capsule-grid" id="doctorQuestionChips"></div>
           </div>
 
-          <div class="partner-card-preview" id="partnerCardPreview">
-            <!-- JS 动态生成伴侣卡片 -->
-          </div>
-
-          <button class="btn-primary" id="copyPartnerCardBtn" type="button" style="width: 100%;">
-            <span>📤 一键复制今日关怀卡片发给 TA</span>
-          </button>
-        </div>
-
-        <!-- 重要日程撞期测算器 -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">✈️ 重要日程撞期测算器</h2>
-              <p class="card-subtitle">输入未来的考试、海岛旅行、婚礼或比赛日期，预判当天身体季节</p>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <input type="text" id="eventNameInput" class="input-field" placeholder="事件名称（如：三亚海岛游 / 考研初试）" value="三亚海岛度假" />
-            <input type="date" id="eventDateInput" class="input-field" />
-          </div>
-          <button class="btn-secondary" id="calcEventCollisionBtn" type="button" style="width: 100%; margin-bottom: 16px;">
-            🔮 立即测算当天身体四季状态
-          </button>
-
-          <div id="eventCollisionResult">
-            <!-- JS 渲染撞期预测结果与物资清单 -->
-          </div>
-        </div>
+          <div class="doctor-sheet" id="doctorSheetContent"></div>
+        </article>
       </div>
     </section>
 
-    <!-- TAB 5: 隐私保险箱与个性化设置 -->
-    <section id="tab-privacy" class="tab-panel">
-      <div class="dashboard-grid">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">🛡️ Local-First 本地隐私保险箱</h2>
-              <p class="card-subtitle">我们没有后端数据库。您的生理与情绪数据 100% 存储在当前设备的浏览器中。</p>
-            </div>
-          </div>
-
-          <div class="guide-cards" style="margin-top: 0;">
-            <div class="guide-item">
-              <div class="guide-icon" style="background: var(--season-spring-soft); color: var(--season-spring);">📦</div>
-              <div class="guide-content" style="flex:1;">
-                <h4>导出本地备份 (.json)</h4>
-                <p>换手机或清理浏览器前，可导出完整周期与症状数据包随时恢复。</p>
-                <button class="btn-secondary" id="exportDataBtn" type="button" style="margin-top: 10px;">⬇️ 下载 JSON 备份文件</button>
+    <!-- ==================== TAB 4: 我的 ==================== -->
+    <section id="tab-mine" class="tab-panel">
+      <div class="two-col-grid">
+        <div class="stack-col">
+          <!-- 人设选择 -->
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">选一个陪你记手帐的人设</h2>
+                <p class="section-sub">随时可以切，全站对话和提醒会立刻换一种语气</p>
               </div>
             </div>
+            <div class="persona-cards" id="personaCardsGrid">
+              <button class="persona-choice active" data-persona="gentle" type="button">
+                <div class="persona-choice-top">
+                  <strong>温柔手帐搭子</strong>
+                  <span class="choice-badge">默认</span>
+                </div>
+                <p>“今天不用硬撑，累了就早点钻进被窝，热饮和好心情我都给你留着。”</p>
+              </button>
+              <button class="persona-choice" data-persona="ceo" type="button">
+                <div class="persona-choice-top">
+                  <strong>霸总模式</strong>
+                  <span class="choice-badge ceo">很上头</span>
+                </div>
+                <p>“女人，今天电量就剩 20% 还想加班？准你立刻躺平，谁惹你不爽算激素的。”</p>
+              </button>
+            </div>
+          </article>
 
-            <div class="guide-item">
-              <div class="guide-icon" style="background: var(--season-summer-soft); color: var(--season-summer);">📂</div>
-              <div class="guide-content" style="flex:1;">
-                <h4>从备份文件恢复</h4>
-                <p>导入之前导出的 TideLog JSON 文件，无缝还原所有历史记录。</p>
-                <input type="file" id="importDataInput" accept=".json" style="display: none;" />
-                <button class="btn-secondary" id="importDataBtn" type="button" style="margin-top: 10px;">⬆️ 选择备份文件导入</button>
+          <!-- 主题皮肤 & 防窥开关 -->
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">换一套顺眼的配色</h2>
+                <p class="section-sub">不粉红、不刺眼，挑一套你最喜欢的纸张质感</p>
               </div>
             </div>
-
-            <div class="guide-item" style="border-color: rgba(200, 109, 81, 0.35);">
-              <div class="guide-icon" style="background: var(--season-winter-soft); color: var(--season-winter);">🔥</div>
-              <div class="guide-content" style="flex:1;">
-                <h4>一键彻底焚毁数据</h4>
-                <p>立即清空当前浏览器中的所有周期、症状与笔记痕迹，不可撤销。</p>
-                <button class="btn-secondary" id="nukeDataBtn" type="button" style="margin-top: 10px; color: var(--season-winter); border-color: var(--season-winter);">
-                  🗑️ 一键焚毁本地数据
-                </button>
-              </div>
+            <div class="theme-grid" id="themeGrid">
+              <button class="theme-option active" data-theme-choice="paper" type="button">
+                <span class="theme-swatches">
+                  <i style="background:#FAF6F0"></i>
+                  <i style="background:#C96A50"></i>
+                  <i style="background:#5A846B"></i>
+                </span>
+                <strong>暖纸手帐</strong>
+                <small>温润复古</small>
+              </button>
+              <button class="theme-option" data-theme-choice="sage" type="button">
+                <span class="theme-swatches">
+                  <i style="background:#F4F6F3"></i>
+                  <i style="background:#4F7D63"></i>
+                  <i style="background:#B86B62"></i>
+                </span>
+                <strong>燕麦鼠尾草</strong>
+                <small>清透治愈</small>
+              </button>
+              <button class="theme-option" data-theme-choice="midnight" type="button">
+                <span class="theme-swatches">
+                  <i style="background:#13161E"></i>
+                  <i style="background:#DDB873"></i>
+                  <i style="background:#A68DB8"></i>
+                </span>
+                <strong>静谧夜空</strong>
+                <small>护眼深色</small>
+              </button>
             </div>
-          </div>
+
+            <div class="setting-row-switch">
+              <div>
+                <strong>防窥天气手帐模式</strong>
+                <p>在地铁或办公室打开时，把页面文字伪装成普通天气与精力日记</p>
+              </div>
+              <button class="toggle-switch" id="stealthSwitchMine" type="button" role="switch" aria-checked="false">
+                <span class="toggle-knob"></span>
+              </button>
+            </div>
+          </article>
         </div>
 
-        <!-- 个性化周期基准参数设置 -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">⚙️ 个人周期基准校准</h2>
-              <p class="card-subtitle">系统会根据您的历史记录自动加权计算，您也可以手动调整初始默认值</p>
+        <div class="stack-col">
+          <!-- 个人周期基准 -->
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">你的默认周期参考</h2>
+                <p class="section-sub">记够 2 次以后会自动按你的真实规律算，这里只是初始参考</p>
+              </div>
             </div>
-          </div>
+            <div class="settings-form">
+              <label class="field-block">
+                <span>一般隔多少天来一次（常见 21~35 天）</span>
+                <input type="number" id="settingCycleLen" class="input-field" min="18" max="60" />
+              </label>
+              <label class="field-block">
+                <span>一般会持续几天（常见 3~7 天）</span>
+                <input type="number" id="settingPeriodLen" class="input-field" min="2" max="14" />
+              </label>
+              <button class="btn-primary" id="saveSettingsBtn" type="button">保存参考值</button>
+            </div>
+          </article>
 
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <label style="font-size: 13.5px; font-weight: 500;">
-              默认周期长度（两次来潮首日间隔，医学常态 21~35 天）
-              <input type="number" id="settingCycleLen" class="input-field" min="18" max="60" style="width: 100%; margin-top: 6px;" />
-            </label>
-            <label style="font-size: 13.5px; font-weight: 500;">
-              默认经期持续天数（医学常态 3~7 天）
-              <input type="number" id="settingPeriodLen" class="input-field" min="2" max="14" style="width: 100%; margin-top: 6px;" />
-            </label>
-            <button class="btn-primary" id="saveSettingsBtn" type="button">💾 保存基准设置</button>
-          </div>
+          <!-- 本地隐私保险箱 -->
+          <article class="card">
+            <div class="card-head compact">
+              <div>
+                <h2 class="section-title">隐私保险箱 · 纯本地存储</h2>
+                <p class="section-sub">我们没有服务器、不登录账号，所有记录都只存在你当前浏览器里</p>
+              </div>
+            </div>
+
+            <div class="vault-actions">
+              <button class="vault-item" id="exportDataBtn" type="button">
+                <div>
+                  <strong>导出本地备份 (.json)</strong>
+                  <span>换手机或清缓存前，顺手存一份到文件里</span>
+                </div>
+                <span class="vault-arrow">↓</span>
+              </button>
+
+              <input type="file" id="importDataInput" accept=".json" style="display:none;" />
+              <button class="vault-item" id="importDataBtn" type="button">
+                <div>
+                  <strong>从备份文件恢复</strong>
+                  <span>导入之前导出的潮汐历备份文件</span>
+                </div>
+                <span class="vault-arrow">↑</span>
+              </button>
+
+              <button class="vault-item danger" id="nukeDataBtn" type="button">
+                <div>
+                  <strong>清空全部本地记录</strong>
+                  <span>立即抹掉所有周期、手帐和大事记，无法找回</span>
+                </div>
+                <span class="vault-arrow">×</span>
+              </button>
+            </div>
+          </article>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- 补录 / 添加历史经期弹窗 -->
-  <div class="modal-backdrop" id="retroModal">
+  <!-- 手机端悬浮玻璃底部导航栏 -->
+  <nav class="mobile-bottom-nav" aria-label="手机底部导航">
+    <button class="mnav-btn active" data-tab="tab-today" type="button">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <span>今日</span>
+    </button>
+    <button class="mnav-btn" data-tab="tab-calendar" type="button">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>日历</span>
+    </button>
+    <button class="mnav-btn" data-tab="tab-toolkit" type="button">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"/></svg>
+      <span>工具箱</span>
+    </button>
+    <button class="mnav-btn" data-tab="tab-mine" type="button">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
+      <span>我的</span>
+    </button>
+  </nav>
+
+  <!-- 补记 / 修改周期弹窗 -->
+  <div class="modal-backdrop" id="retroModal" role="dialog" aria-modal="true" aria-labelledby="retroModalTitle">
     <div class="modal-dialog">
-      <div class="card-header">
-        <h3 class="card-title">✍️ 补录或新增一次生理期</h3>
-        <button class="month-nav-btn" id="closeRetroModalBtn" type="button">✕</button>
+      <div class="modal-head">
+        <h3 id="retroModalTitle">补记一次来的日期</h3>
+        <button class="icon-btn sm" id="closeRetroModalBtn" type="button" aria-label="关闭">✕</button>
       </div>
-      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-        记录过往或刚刚开始的经期起止日期，算法会自动重算您的身体四季与下次预测窗口。
-      </p>
-      <div style="display: flex; flex-direction: column; gap: 14px;">
-        <label style="font-size: 13px; font-weight: 500;">
-          来潮第一天（必填）
-          <input type="date" id="retroStartDate" class="input-field" style="width: 100%; margin-top: 6px;" />
+      <p class="section-sub" style="margin-bottom: 16px;">把前几次来的日期补上，预测会越来越准。</p>
+      <div class="settings-form">
+        <label class="field-block">
+          <span>来的第一天（必填）</span>
+          <input type="date" id="retroStartDate" class="input-field" />
         </label>
-        <label style="font-size: 13px; font-weight: 500;">
-          结束日期（选填，留空则按默认持续天数推算）
-          <input type="date" id="retroEndDate" class="input-field" style="width: 100%; margin-top: 6px;" />
+        <label class="field-block">
+          <span>结束日期（不填就按平时天数算）</span>
+          <input type="date" id="retroEndDate" class="input-field" />
         </label>
-        <div style="display: flex; gap: 10px; margin-top: 8px;">
-          <button class="btn-secondary" id="cancelRetroBtn" type="button" style="flex:1;">取消</button>
-          <button class="btn-primary" id="confirmRetroBtn" type="button" style="flex:1;">确认保存</button>
+        <div class="action-pair" style="margin-top: 6px;">
+          <button class="btn-soft" id="cancelRetroBtn" type="button">先算了</button>
+          <button class="btn-primary" id="confirmRetroBtn" type="button">记好了</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="toast" id="toastEl">已保存至本地</div>
+  <!-- 轻提示 Toast -->
+  <div class="toast" id="toastEl" role="status" aria-live="polite"></div>
 
   <script src="./app.js"></script>
 </body>

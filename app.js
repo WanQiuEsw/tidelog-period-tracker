@@ -1,14 +1,11 @@
-// TideLog (潮汐历) - Local-First Period & Hormone Cycle Syncing App
-// shortcut: single-file state in localStorage, upgrade to IndexedDB only if logs exceed 10+ years of daily rich media.
+// TideLog 潮汐历 - 纯本地温柔身体手帐 (Zero-dependency)
+// shortcut: state persists in localStorage; switch to IndexedDB only if users attach media files.
 
 const STORAGE_KEY = "tidelog_v1_state";
 const DAY_MS = 86400000;
 
-function toDateStr(dateObj) {
-  const y = dateObj.getFullYear();
-  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const d = String(dateObj.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function parseDateStr(str) {
@@ -22,10 +19,8 @@ function addDays(dateStr, days) {
   return toDateStr(dt);
 }
 
-function diffDays(dateStrA, dateStrB) {
-  const a = parseDateStr(dateStrA);
-  const b = parseDateStr(dateStrB);
-  return Math.round((a.getTime() - b.getTime()) / DAY_MS);
+function diffDays(aStr, bStr) {
+  return Math.round((parseDateStr(aStr).getTime() - parseDateStr(bStr).getTime()) / DAY_MS);
 }
 
 function formatCNDate(dateStr) {
@@ -34,182 +29,140 @@ function formatCNDate(dateStr) {
   return `${m}月${d}日`;
 }
 
-// 预设胶囊标签体系（支持普通模式与月相暗语模式双语切换）
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// 症状胶囊分组（支持防窥天气手帐切换）
 const SYMPTOM_GROUPS = [
   {
     id: "flow",
-    title: "经量与性状",
-    camoTitle: "潮汐强度",
+    title: "今天的量",
+    stealthTitle: "今日雨势",
     intimate: false,
     items: [
-      { id: "flow_light", label: "💧 点滴/少量", camo: "💧 微汐" },
-      { id: "flow_medium", label: "🩸 正常经量", camo: "🌊 常潮" },
-      { id: "flow_heavy", label: "🌊 量大夜用", camo: "⛈️ 涌潮" },
-      { id: "flow_clots", label: "🫘 伴随血块", camo: "🪨 暗流" },
-      { id: "flow_brown", label: "🍂 褐色分泌", camo: "🍂 余汐" }
+      { id: "flow_light", label: "一点点", stealth: "零星小雨" },
+      { id: "flow_medium", label: "正常量", stealth: "平稳中雨" },
+      { id: "flow_heavy", label: "量挺大", stealth: "阵雨偏大" },
+      { id: "flow_clots", label: "有血块", stealth: "风力偏强" },
+      { id: "flow_brown", label: "快干净了", stealth: "雨后放晴" }
     ]
   },
   {
     id: "body",
-    title: "身体感受",
-    camoTitle: "体感信号",
+    title: "身体感觉",
+    stealthTitle: "体感状态",
     intimate: false,
     items: [
-      { id: "pain_cramps_mild", label: "⚡ 轻微腹坠", camo: "⚡ 轻微震荡" },
-      { id: "pain_cramps_heavy", label: "🔥 重度痛经", camo: "🔥 强能量波动" },
-      { id: "body_backache", label: "🪵 腰酸背痛", camo: "🪵 核心酸沉" },
-      { id: "body_breast", label: "🎈 乳房胀痛", camo: "🎈 胸廓敏感" },
-      { id: "body_headache", label: "🤕 偏头痛", camo: "🤕 头部紧绷" },
-      { id: "body_acne", label: "🌱 下巴冒痘", camo: "🌱 肌表微瑕" },
-      { id: "body_bloating", label: "🫧 水肿腹胀", camo: "🫧 储水期" },
-      { id: "body_insomnia", label: "🦉 浅眠多梦", camo: "🦉 夜航浅眠" }
+      { id: "pain_cramps_mild", label: "小腹坠坠的", stealth: "微微发沉" },
+      { id: "pain_cramps_heavy", label: "痛经难受", stealth: "急需热饮" },
+      { id: "body_backache", label: "腰酸背痛", stealth: "肩腰酸软" },
+      { id: "body_breast", label: "胸胀敏感", stealth: "体感偏敏" },
+      { id: "body_headache", label: "头胀/偏头痛", stealth: "脑壳发紧" },
+      { id: "body_acne", label: "下巴冒痘", stealth: "皮肤小抗议" },
+      { id: "body_bloating", label: "水肿发胀", stealth: "有点浮肿" },
+      { id: "body_insomnia", label: "没睡好", stealth: "浅眠多梦" }
     ]
   },
   {
     id: "mood",
-    title: "荷尔蒙情绪与精力",
-    camoTitle: "精神电波",
+    title: "脑袋和心情",
+    stealthTitle: "心情天气",
     intimate: false,
     items: [
-      { id: "mood_calm", label: "🍵 平静松弛", camo: "🍵 静水深流" },
-      { id: "mood_focus", label: "✨ 思维极度清晰", camo: "✨ 满格灵感" },
-      { id: "mood_tired", label: "🔋 电量仅剩20%", camo: "🔋 低功耗模式" },
-      { id: "mood_irritable", label: "🧨 莫名烦躁易怒", camo: "🧨 气压偏低" },
-      { id: "mood_sad", label: "🌧️ 委屈想哭", camo: "🌧️ 阴雨微潮" },
-      { id: "mood_craving", label: "🥐 疯狂想吃碳水/甜食", camo: "🥐 热量召唤" }
+      { id: "mood_calm", label: "平静松弛", stealth: "微风正好" },
+      { id: "mood_focus", label: "脑子超清晰", stealth: "灵感在线" },
+      { id: "mood_tired", label: "电量剩20%", stealth: "电量告急" },
+      { id: "mood_irritable", label: "莫名想发火", stealth: "气压偏低" },
+      { id: "mood_sad", label: "委屈想哭", stealth: "多云转阴" },
+      { id: "mood_craving", label: "狂想吃甜食/碳水", stealth: "急需甜点" }
     ]
   },
   {
     id: "intimate",
-    title: "私密与用药打卡",
-    camoTitle: "特殊信标",
+    title: "小记录与用药",
+    stealthTitle: "日常备忘",
     intimate: true,
     items: [
-      { id: "med_painkiller", label: "💊 服用布洛芬/止痛药", camo: "💊 舒缓补给" },
-      { id: "med_iron", label: "🍷 补铁/热敷暖贴", camo: "🍷 暖能补充" },
-      { id: "intimate_protected", label: "🛡️ 亲密(有措施)", camo: "🛡️ 双星伴行(护)" },
-      { id: "intimate_unprotected", label: "❤️ 亲密(无措施)", camo: "❤️ 双星交汇" },
-      { id: "med_bcp", label: "📅 短效避孕药打卡", camo: "📅 周期锚点打卡" }
+      { id: "med_painkiller", label: "吃了止痛药", stealth: "补给已用" },
+      { id: "med_iron", label: "贴了暖宝宝/热敷", stealth: "热敷回血" },
+      { id: "intimate_protected", label: "亲密(有保护)", stealth: "双人时光 A" },
+      { id: "intimate_unprotected", label: "亲密(无保护)", stealth: "双人时光 B" },
+      { id: "med_bcp", label: "吃了短效药", stealth: "每日打卡" }
     ]
   }
 ];
 
-// 身体四季科学元数据（Cycle Syncing）
+const DOCTOR_QUESTIONS = [
+  "痛经比以前更重了，需要做 B 超排查吗？",
+  "最近周期变长/变短，算在正常范围里吗？",
+  "经量突然变少或有较多血块，需要查激素吗？",
+  "经前情绪波动或胸胀很明显，怎么缓解更安全？",
+  "有重要考试/旅行撞期，可以怎么安全调整？"
+];
+
+// 基础阶段元数据（Milestone 2 将注入完整温柔搭子/霸总双人设与即时语料）
 const SEASON_META = {
   winter: {
     key: "winter",
     colorVar: "var(--season-winter)",
     softVar: "var(--season-winter-soft)",
-    badge: "❄️ 身体冬季 · 月经休养期",
-    camoBadge: "🌑 朔月潮汐 · 深度归零期",
-    title: "冬季 · 经期来潮",
-    camoTitle: "朔月 · 潮汐休整",
-    work: "大脑左右半球连接最紧密的时期。不必强迫自己开启高强度新项目，适合做复盘、断舍离与直觉型决策。",
-    sport: "子宫内膜正在剥落更新，停止高冲击HIIT与卷腹。推荐阴瑜伽、冥想或慢速散步，给身体彻底放假。",
-    reassurance: "💛 反焦虑抱抱：现在雌激素和孕酮双双处于谷底。今天只想躺平、反应变慢并不是你懒惰，而是身体正在进行每月一次的深度重启。",
-    partnerScience: {
-      quote: "她目前处于【身体冬季（月经期）】，体内前列腺素引发子宫平滑肌收缩，雌激素处于全月最低谷，体力值约剩 25%。",
-      dos: "✅ 主动接管洗碗/家务、准备好热饮或暖水袋、允许她安静放空",
-      donts: "❌ 忌说“多喝热水”、忌催促赶时间、忌在这个阶段争辩复杂矛盾"
-    },
-    partnerWitty: {
-      quote: "🚨 一级警报：本宫正在经历每月一次的“渡劫掉血期”，当前护甲值为 0，痛感神经放大 200%！",
-      dos: "✅ 投喂温热红糖姜茶/热汤、主动承包外卖与跑腿、提供人肉暖手宝服务",
-      donts: "❌ 严禁惹毛、严禁讲大道理、严禁问“怎么又累了”"
-    },
-    partnerMinimal: {
-      quote: "【状态：冬季休眠 / 电量 25%】生理痛感与疲劳高发期。",
-      dos: "✅ 宜：热敷、投喂温食、免除家务",
-      donts: "❌ 忌：讲道理、安排高体力外出"
-    }
+    chip: "经期 · 合法躺平",
+    stealthChip: "小雨 · 节能休整",
+    title: "电量告急 · 合法躺平期",
+    stealthTitle: "低电量休整日",
+    work: "这两天不用逼自己冲刺，做点轻收尾、整理和放空就够了。",
+    sport: "暂停蹦跳和卷腹，散散步、伸展一下肩膀或者早点躺进被窝最舒服。",
+    note: "现在身体正在悄悄换新，只想发呆、不想说话不是偷懒，是身体在喊你慢下来。",
+    waveLevel: 148
   },
   spring: {
     key: "spring",
     colorVar: "var(--season-spring)",
     softVar: "var(--season-spring-soft)",
-    badge: "🌱 身体春季 · 卵泡复苏期",
-    camoBadge: "🌒 上弦新芽 · 能量攀升期",
-    title: "春季 · 卵泡生长期",
-    camoTitle: "上弦 · 灵感复苏",
-    work: "雌激素稳步爬升，大脑多巴胺与好奇心同步觉醒！现在是开启新计划、头脑风暴、学习新技能与攻克难题的黄金周。",
-    sport: "体能与肌肉恢复速度明显加快，适合逐步恢复慢跑、普拉提、网球或中等强度有氧训练。",
-    reassurance: "💚 身体信号：你会明显感觉水肿消退、皮肤变透亮、情绪轻盈。趁着这波天然的荷尔蒙顺风车去推进你想做的事吧！",
-    partnerScience: {
-      quote: "她已进入【身体春季（卵泡期）】，雌激素持续回升，血清素与多巴胺分泌增加，她的精力、创造力与好心情正在快速回归。",
-      dos: "✅ 约她探索新餐厅、一起规划周末短途出游、支持她的新点子",
-      donts: "❌ 不要扫兴泼冷水，这是她一个月里最有干劲的阶段"
-    },
-    partnerWitty: {
-      quote: "🌱 满血复活通知！渡劫结束，本仙女的智商、颜值与好脾气已重新占领高地！",
-      dos: "✅ 适合带我出去吃好吃的、拍照打卡、讨论有趣的计划",
-      donts: "❌ 别宅着发霉，趁我心情好赶紧表现"
-    },
-    partnerMinimal: {
-      quote: "【状态：春季复苏 / 电量 85%】雌激素上升，情绪积极明朗。",
-      dos: "✅ 宜：约会、运动、探索新鲜事物",
-      donts: "❌ 忌：沉闷敷衍"
-    }
+    chip: "回血期 · 状态回升",
+    stealthChip: "晴朗 · 电量回升",
+    title: "满血回春 · 状态回升中",
+    stealthTitle: "清透回血日",
+    work: "脑子开始变轻盈，适合开启新计划、学点新东西或约朋友聊聊天。",
+    sport: "体力恢复得很快，慢跑、普拉提、快走或者轻力量都可以慢慢安排上。",
+    note: "水肿在消，皮肤也在变亮。趁这几天心情轻快，去做件一直想做的小事吧。",
+    waveLevel: 158
   },
   summer: {
     key: "summer",
     colorVar: "var(--season-summer)",
     softVar: "var(--season-summer-soft)",
-    badge: "☀️ 身体夏季 · 排卵高能期",
-    camoBadge: "🌕 满月巅峰 · 光芒外放期",
-    title: "夏季 · 黄金高能期",
-    camoTitle: "满月 · 能量峰值",
-    work: "雌激素达到全月巅峰！你的语言表达力、共情力与抗压能力处于最强状态。最适合做公开演讲、商务谈判、面试或重要社交。",
-    sport: "爆发力与核心体能满格！适合挑战个人最佳纪录（PB）、力量举铁、燃脂搏击或高强度间歇训练。",
-    reassurance: "🧡 贴心提醒：满格的社交欲可能会让你不小心排满日程。注意排卵期可能伴随轻微单侧小腹隐痛或透明拉丝分泌物，均属健康生理现象。",
-    partnerScience: {
-      quote: "她正处于【身体夏季（排卵高峰期）】，雌激素与促黄体生成素达到峰值，这是她全月社交欲、魅力值与精力最旺盛的几天。",
-      dos: "✅ 安排浪漫约会、真诚夸赞她的状态、共同参与社交或运动",
-      donts: "❌ 若有避孕需求，这几天属于高受孕风险窗口，请务必严格做好安全措施"
-    },
-    partnerWitty: {
-      quote: "☀️ 全月高光时刻！今日颜值、气场与精力统统拉满，属于“看谁都顺眼”的限时福利期～",
-      dos: "✅ 夸我好看、带我去热闹浪漫的地方约会",
-      donts: "❌ 重点提醒：安全措施必须100%到位，别掉链子！"
-    },
-    partnerMinimal: {
-      quote: "【状态：夏季巅峰 / 电量 100%】表达欲与体能全月最高。",
-      dos: "✅ 宜：深度沟通、约会、严格避孕(如非备孕)",
-      donts: "❌ 忌：忽视她的分享欲"
-    }
+    chip: "高光日 · 精力拉满",
+    stealthChip: "大晴 · 满格状态",
+    title: "全月高光 · 精力拉满",
+    stealthTitle: "高能晴朗日",
+    work: "表达欲和底气都很足，重要的汇报、面试、谈事或约会放这几天很合适。",
+    sport: "体能在线，喜欢运动的话可以小冲一下，记得多喝水、别排太满。",
+    note: "这几天很容易看什么都顺眼；如果偶尔单侧小腹有一点点闷，大多是排卵的小信号。",
+    waveLevel: 166
   },
   autumn: {
     key: "autumn",
     colorVar: "var(--season-autumn)",
     softVar: "var(--season-autumn-soft)",
-    badge: "🍂 身体秋季 · 黄体敏感期",
-    camoBadge: "🌘 下弦内敛 · 节能防御期",
-    title: "秋季 · 黄体缓冲期",
-    camoTitle: "下弦 · 能量回落",
-    work: "孕酮升高使基础体温上升 0.3~0.5℃，大脑对细节和风险更敏感。适合做推进收尾、校对审核与独立专注工作，减少无效社交。",
-    sport: "黄体晚期容易更快感到心率升高和疲惫。请把高强度燃脂切换为拉伸、快走或轻重量训练，绝不苛责体能下降。",
-    reassurance: "💜 科学脱敏：黄体晚期孕酮与血清素骤降，大脑会本能地渴望高碳水/甜食来合成快乐激素，且容易对小事产生悲观或烦躁（PMS）。**这不是你的性格缺陷，是荷尔蒙退潮时的生理反射，请允许自己早睡和吃一点喜欢的食物。**",
-    partnerScience: {
-      quote: "她进入了【身体深秋（黄体期 / PMS 敏感期）】，孕酮冲高后开始回落，导致基础体温升高、容易疲倦，且大脑血清素下降会降低情绪缓冲阈值。",
-      dos: "✅ 给她独处和早睡的空间、备好健康小零食、在她烦躁时先共情拥抱而非讲道理",
-      donts: "❌ 千万不要把她的情绪波动归咎于“无理取闹”，不要在这个阶段挑起敏感话题"
-    },
-    partnerWitty: {
-      quote: "🍂 警告：已进入暴风雨前的【秋日敏感结界】！体内快乐激素正在滑坡，我现在就像一只炸毛边缘的猫，非常需要碳水和安慰！",
-      dos: "✅ 无条件顺毛、投喂好吃的甜点/热食、听我吐槽并坚定站我这边",
-      donts: "❌ 严禁顶嘴、严禁冷战、严禁质疑我为什么突然不开心"
-    },
-    partnerMinimal: {
-      quote: "【状态：秋季回落 / 电量 45%】经前敏感期 (PMS)，易疲惫与情绪波动。",
-      dos: "✅ 宜：顺毛倾听、温暖陪伴、减少施压",
-      donts: "❌ 忌：争吵、说教、挑刺"
-    }
+    chip: "经前预警 · 敏感期",
+    stealthChip: "多云 · 慢节奏",
+    title: "经前预警 · 情绪易燃易爆炸",
+    stealthTitle: "微风多云日",
+    work: "对细节和噪音更敏感，适合戴上耳机独立收尾，少管闲事、少做重大决定。",
+    sport: "比平时更容易累和喘，把高强度换成拉伸、瑜伽或慢走，别责怪体力变差。",
+    note: "突然嘴馋甜食或莫名委屈，真的不是你矫情，是激素在退潮。早点睡，买点喜欢的吃。",
+    waveLevel: 154
   }
 };
 
-// 生成贴合当前时间的默认真实感演示数据（让用户一打开就能看到完整的四季、历史规律与就医卡）
 function createDefaultState() {
   const todayStr = toDateStr(new Date());
-  // 默认让用户处于周期第 19 天（身体秋季/黄体期），或可一键点击切换为“今日来潮”
   const c1Start = addDays(todayStr, -18);
   const c2Start = addDays(c1Start, -29);
   const c3Start = addDays(c2Start, -28);
@@ -218,10 +171,12 @@ function createDefaultState() {
 
   const logs = {};
   logs[c1Start] = { tags: ["flow_medium", "pain_cramps_mild", "med_iron"], note: "第一天有点腰酸，贴了暖宝宝舒服很多。" };
-  logs[addDays(c1Start, 1)] = { tags: ["flow_heavy", "pain_cramps_heavy", "med_painkiller", "mood_tired"], note: "第二天量最大，吃了一粒布洛芬。" };
+  logs[addDays(c1Start, 1)] = { tags: ["flow_heavy", "pain_cramps_heavy", "med_painkiller", "mood_tired"], note: "第二天量最大，吃了止痛药早点躺平了。" };
+  logs[addDays(c1Start, -2)] = { tags: ["mood_craving", "body_backache"], note: "突然超级想喝热奶茶。" };
+  logs[addDays(c2Start, -2)] = { tags: ["mood_craving", "mood_irritable"], note: "看啥都有点烦，买了块小蛋糕哄自己。" };
   logs[addDays(c2Start, 1)] = { tags: ["flow_heavy", "pain_cramps_mild", "body_backache"], note: "" };
-  logs[addDays(c3Start, 0)] = { tags: ["flow_medium", "body_headache"], note: "" };
-  logs[todayStr] = { tags: ["mood_craving", "body_breast"], note: "下午特别想喝热奶茶，进入身体秋天模式，今晚准备早点睡。" };
+  logs[c3Start] = { tags: ["flow_medium", "body_headache"], note: "" };
+  logs[todayStr] = { tags: ["mood_craving", "body_breast"], note: "下午好想喝热红豆汤，今晚十点半准备上床。" };
 
   return {
     settings: {
@@ -229,7 +184,9 @@ function createDefaultState() {
       defaultPeriodLen: 5,
       camouflageMode: false,
       hideIntimateTags: false,
-      partnerTone: "science"
+      partnerTone: "gentle",
+      persona: "gentle",
+      theme: "paper"
     },
     cycles: [
       { id: "c5", startDate: c5Start, endDate: addDays(c5Start, 4), excluded: false },
@@ -238,31 +195,58 @@ function createDefaultState() {
       { id: "c2", startDate: c2Start, endDate: addDays(c2Start, 4), excluded: false },
       { id: "c1", startDate: c1Start, endDate: addDays(c1Start, 4), excluded: false }
     ],
-    logs
+    logs,
+    events: [
+      { id: "ev_demo_1", name: "周末短途看海", date: addDays(todayStr, 12), checkedItems: [] },
+      { id: "ev_demo_2", name: "重要考试 / 汇报", date: addDays(todayStr, 25), checkedItems: [] }
+    ],
+    doctorQuestions: [DOCTOR_QUESTIONS[0]]
   };
 }
 
-let appState = loadState();
-let selectedDateStr = toDateStr(new Date());
-let calendarViewDate = new Date();
+function normalizeState(raw) {
+  const base = createDefaultState();
+  if (!raw || !Array.isArray(raw.cycles) || !raw.settings) return base;
+  const merged = {
+    settings: { ...base.settings, ...raw.settings },
+    cycles: raw.cycles.length ? raw.cycles : base.cycles,
+    logs: raw.logs && typeof raw.logs === "object" ? raw.logs : {},
+    events: Array.isArray(raw.events) ? raw.events : base.events,
+    doctorQuestions: Array.isArray(raw.doctorQuestions) ? raw.doctorQuestions : base.doctorQuestions
+  };
+  // 兼容旧版 partnerTone 值
+  if (!["gentle", "ceo", "witty"].includes(merged.settings.partnerTone)) {
+    merged.settings.partnerTone = "gentle";
+  }
+  if (!["gentle", "ceo"].includes(merged.settings.persona)) {
+    merged.settings.persona = "gentle";
+  }
+  if (!["paper", "sage", "midnight"].includes(merged.settings.theme)) {
+    merged.settings.theme = "paper";
+  }
+  return merged;
+}
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const initial = createDefaultState();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-      return initial;
+      const init = createDefaultState();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(init));
+      return init;
     }
-    const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.cycles) || !parsed.settings) {
-      return createDefaultState();
-    }
-    return parsed;
+    return normalizeState(JSON.parse(raw));
   } catch (e) {
     return createDefaultState();
   }
 }
+
+let appState = loadState();
+let selectedDateStr = toDateStr(new Date());
+let calendarViewDate = new Date();
+let selectedEventId = appState.events[0]?.id || null;
+let lastCompanionOverride = null; // 点击胶囊后的即时对话反馈
+let waveHoverRatio = null;
 
 function saveState(toastMsg) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -276,13 +260,13 @@ function showToast(msg) {
   el.textContent = msg;
   el.classList.add("show");
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => el.classList.remove("show"), 2400);
+  window.__toastTimer = setTimeout(() => el.classList.remove("show"), 2300);
 }
 
-// 核心算法：计算加权平均周期、波动差值、当前所处季节与弹性预测窗口
+// ==================== 核心周期预测与波浪曲线数学 ====================
 function computeCycleStats(state) {
   const sorted = [...state.cycles].sort((a, b) => a.startDate.localeCompare(b.startDate));
-  const defaultCycle = Number(state.settings.defaultCycleLen) || 28;
+  const defaultCycle = Number(state.settings.defaultCycleLen) || 29;
   const defaultPeriod = Number(state.settings.defaultPeriodLen) || 5;
 
   const lengths = [];
@@ -297,21 +281,14 @@ function computeCycleStats(state) {
     let cycleLen = null;
     if (i < sorted.length - 1) {
       cycleLen = diffDays(sorted[i + 1].startDate, cur.startDate);
-      if (!cur.excluded && cycleLen >= 16 && cycleLen <= 65) {
-        lengths.push(cycleLen);
-      }
+      if (!cur.excluded && cycleLen >= 16 && cycleLen <= 65) lengths.push(cycleLen);
     }
-    historyRows.push({
-      ...cur,
-      duration: dur,
-      cycleLen
-    });
+    historyRows.push({ ...cur, duration: dur, cycleLen });
   }
 
   const avgCycleLen = lengths.length
     ? Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length)
     : defaultCycle;
-
   const avgPeriodLen = durations.length
     ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
     : defaultPeriod;
@@ -319,23 +296,17 @@ function computeCycleStats(state) {
   const minCycle = lengths.length ? Math.min(...lengths) : avgCycleLen - 1;
   const maxCycle = lengths.length ? Math.max(...lengths) : avgCycleLen + 1;
   const variation = lengths.length >= 2 ? maxCycle - minCycle : 2;
-  // 波动越小置信度越高
-  const confidence = Math.max(68, Math.min(96, 95 - variation * 3));
 
   const todayStr = toDateStr(new Date());
-  const latestCycle = sorted.length ? sorted[sorted.length - 1] : null;
+  const latestCycle = sorted[sorted.length - 1] || null;
   const lmpDate = latestCycle ? latestCycle.startDate : todayStr;
   const cycleDay = Math.max(1, diffDays(todayStr, lmpDate) + 1);
 
-  // 弹性预测下次来潮窗口
   const nextPredCenter = addDays(lmpDate, avgCycleLen);
   const spread = Math.max(1, Math.min(3, Math.round(variation / 2)));
   const nextPredStart = addDays(nextPredCenter, -spread);
   const nextPredEnd = addDays(nextPredCenter, spread);
-
-  // 排卵日通常在下次来潮前 14 天
   const ovulationDayNum = Math.max(avgPeriodLen + 3, avgCycleLen - 14);
-
   const seasonInfo = getSeasonForDay(cycleDay, avgPeriodLen, ovulationDayNum, avgCycleLen);
 
   return {
@@ -346,7 +317,7 @@ function computeCycleStats(state) {
     minCycle,
     maxCycle,
     variation,
-    confidence,
+    spread,
     lmpDate,
     cycleDay,
     nextPredCenter,
@@ -359,19 +330,12 @@ function computeCycleStats(state) {
 
 function getSeasonForDay(dayNum, periodLen, ovulationDayNum, avgCycleLen) {
   const effectiveDay = ((dayNum - 1) % Math.max(21, avgCycleLen)) + 1;
-  if (effectiveDay <= periodLen) {
-    return SEASON_META.winter;
-  }
-  if (effectiveDay < ovulationDayNum - 2) {
-    return SEASON_META.spring;
-  }
-  if (effectiveDay <= ovulationDayNum + 2) {
-    return SEASON_META.summer;
-  }
+  if (effectiveDay <= periodLen) return SEASON_META.winter;
+  if (effectiveDay < ovulationDayNum - 2) return SEASON_META.spring;
+  if (effectiveDay <= ovulationDayNum + 2) return SEASON_META.summer;
   return SEASON_META.autumn;
 }
 
-// 判断某一天是否在已记录的真实经期内
 function isDateInLoggedPeriod(dateStr, cycles, defaultPeriodLen) {
   for (const c of cycles) {
     const end = c.endDate || addDays(c.startDate, defaultPeriodLen - 1);
@@ -380,23 +344,17 @@ function isDateInLoggedPeriod(dateStr, cycles, defaultPeriodLen) {
   return false;
 }
 
-// 判断未来某一天所处的预测状态
 function getFutureDatePrediction(dateStr, stats) {
   const daysFromLmp = diffDays(dateStr, stats.lmpDate);
-  if (daysFromLmp < 0) return { type: "past", season: SEASON_META.spring };
-
+  if (daysFromLmp < 0) return { type: "past", modDay: 1, season: SEASON_META.spring };
   const cycleLen = stats.avgCycleLen;
   const modDay = (daysFromLmp % cycleLen) + 1;
   const isFuture = dateStr > toDateStr(new Date());
 
   const isPredictedPeriod =
-    isFuture &&
-    daysFromLmp >= cycleLen - 1 &&
-    (modDay <= stats.avgPeriodLen || modDay === cycleLen);
-
+    isFuture && daysFromLmp >= cycleLen - 1 && (modDay <= stats.avgPeriodLen || modDay === cycleLen);
   const isOvulationWindow =
     modDay >= stats.ovulationDayNum - 2 && modDay <= stats.ovulationDayNum + 2;
-
   const season = getSeasonForDay(modDay, stats.avgPeriodLen, stats.ovulationDayNum, cycleLen);
 
   return {
@@ -406,156 +364,247 @@ function getFutureDatePrediction(dateStr, stats) {
   };
 }
 
-// 渲染全局界面
-function renderAll() {
-  const stats = computeCycleStats(appState);
-  const camo = Boolean(appState.settings.camouflageMode);
+// 精力值与敏感度连续曲线函数（保证曲线路径与游标圆点 100% 精准贴合）
+function evalWaveY(ratio) {
+  const r = Math.min(1, Math.max(0, ratio));
+  // 精力曲线（雌激素趋势）：排卵附近(0.46)最高，黄体中段(0.75)小回弹，经期低谷
+  const energyNorm =
+    0.16 +
+    0.78 * Math.exp(-Math.pow((r - 0.45) / 0.16, 2)) +
+    0.30 * Math.exp(-Math.pow((r - 0.76) / 0.14, 2));
+  // 敏感度/想躺平曲线（孕酮/经前情绪波动）：黄体期(0.76)高企，临近来潮陡降
+  const sensNorm =
+    0.14 +
+    0.78 * Math.exp(-Math.pow((r - 0.77) / 0.16, 2)) +
+    0.18 * Math.exp(-Math.pow((r - 0.06) / 0.09, 2));
 
-  // 1. 切换月相暗语模式主题
-  document.body.classList.toggle("camouflage-mode", camo);
-  document.getElementById("brandMark").textContent = camo ? "月" : "汐";
-  document.getElementById("brandTitle").textContent = camo ? "月相天文台 LunarLog" : "潮汐历 TideLog";
-  document.getElementById("brandSubtitle").textContent = camo
-    ? "自然节律与精力潮汐观测笔记"
-    : "去粉红化 · 身体四季与荷尔蒙能量天文台";
-  document.getElementById("camouflageIcon").textContent = camo ? "🌕" : "🌙";
-  document.getElementById("camouflageText").textContent = camo ? "月相暗语模式：已开启" : "月相暗语模式：关";
-  document.getElementById("camouflageBtn").classList.toggle("active", camo);
-
-  renderCompassTab(stats, camo);
-  renderCapsuleLogger(camo);
-  renderCalendarTab(stats, camo);
-  renderDoctorTab(stats);
-  renderToolkitTab(stats);
-  renderSettingsTab();
+  const yEnergy = 78 - Math.min(1, energyNorm) * 62;
+  const ySens = 78 - Math.min(1, sensNorm) * 60;
+  return { yEnergy, ySens };
 }
 
-// 渲染 Tab 1：身体四季能量罗盘
-function renderCompassTab(stats, camo) {
+function buildWavePaths() {
+  const steps = 48;
+  const ePts = [];
+  const sPts = [];
+  for (let i = 0; i <= steps; i++) {
+    const r = i / steps;
+    const x = +(r * 400).toFixed(1);
+    const { yEnergy, ySens } = evalWaveY(r);
+    ePts.push(`${x},${yEnergy.toFixed(1)}`);
+    sPts.push(`${x},${ySens.toFixed(1)}`);
+  }
+  const energyLine = `M ${ePts.join(" L ")}`;
+  const energyArea = `${energyLine} L 400,88 L 0,88 Z`;
+  const sensLine = `M ${sPts.join(" L ")}`;
+  return { energyLine, energyArea, sensLine };
+}
+
+// ==================== 全局渲染 ====================
+function renderAll() {
+  const stats = computeCycleStats(appState);
+  const stealth = Boolean(appState.settings.camouflageMode);
+  const persona = appState.settings.persona || "gentle";
+  const theme = appState.settings.theme || "paper";
+
+  // 主题与季节强调色
+  document.body.setAttribute("data-theme", theme);
+  document.body.classList.toggle("stealth-mode", stealth);
+  const rootStyle = document.documentElement.style;
+  rootStyle.setProperty("--active-season", stats.seasonInfo.colorVar);
+  rootStyle.setProperty("--active-season-soft", stats.seasonInfo.softVar);
+
+  const themeColors = { paper: "#FAF6F0", sage: "#F3F6F2", midnight: "#12151C" };
+  document.getElementById("metaThemeColor")?.setAttribute("content", themeColors[theme] || "#FAF6F0");
+
+  // 顶部栏
+  document.getElementById("brandTitle").textContent = stealth ? "晴雨手帐" : "潮汐历";
+  document.getElementById("brandSubtitle").textContent = stealth
+    ? "每日天气与精力小记"
+    : "只存你设备里的小手帐";
+
+  const personaBtn = document.getElementById("personaQuickBtn");
+  personaBtn.classList.toggle("is-ceo", persona === "ceo");
+  document.getElementById("personaQuickText").textContent = persona === "ceo" ? "霸总模式" : "温柔搭子";
+  document.getElementById("stealthBtn").classList.toggle("active", stealth);
+
+  renderTodayTab(stats, stealth, persona);
+  renderCapsuleLogger(stealth);
+  renderCalendarTab(stats, stealth);
+  renderToolkitTab(stats, stealth, persona);
+  renderMineTab(stealth, persona, theme);
+}
+
+function renderTodayTab(stats, stealth, persona) {
   const s = stats.seasonInfo;
-  const badgeEl = document.getElementById("currentSeasonBadge");
-  badgeEl.textContent = camo ? s.camoBadge : s.badge;
-  badgeEl.style.background = s.softVar;
-  badgeEl.style.color = s.colorVar;
+  document.getElementById("currentPhaseChip").textContent = stealth ? s.stealthChip : s.chip;
 
-  document.getElementById("predictionConfidence").textContent = `弹性预测置信度 ${stats.confidence}%`;
-  document.getElementById("cycleDayLabel").textContent = camo ? "当前月相周期" : "当前生理周期";
-  document.getElementById("cycleDayNum").textContent = `Day ${stats.cycleDay}`;
+  const regText =
+    stats.variation <= 3
+      ? `最近挺规律 · 误差±${stats.spread}天`
+      : stats.variation <= 7
+        ? `节奏还挺稳 · 误差±${stats.spread}天`
+        : `最近有波动 · 按±${stats.spread}天估`;
+  document.getElementById("regularityChip").textContent = regText;
 
-  const titleEl = document.getElementById("compassSeasonTitle");
-  titleEl.textContent = camo ? s.camoTitle : s.title;
-  titleEl.style.color = s.colorVar;
-
-  const daysUntilNext = diffDays(stats.nextPredCenter, toDateStr(new Date()));
-  const hintPrefix = camo ? "下次朔月潮汐窗口" : "下次预计来潮窗口";
-  document.getElementById("compassNextHint").textContent =
-    daysUntilNext >= 0
-      ? `${hintPrefix}：${formatCNDate(stats.nextPredStart)} ~ ${formatCNDate(stats.nextPredEnd)}（约 ${daysUntilNext} 天后）`
-      : `${hintPrefix}：已进入弹性来潮窗口（推迟 ${Math.abs(daysUntilNext)} 天属常见波动）`;
-
-  // 更新 SVG 圆环进度与光点坐标
-  const circumference = 2 * Math.PI * 102; // 640.88
-  const progressRatio = Math.min(1, Math.max(0.04, stats.cycleDay / stats.avgCycleLen));
-  const offset = circumference * (1 - progressRatio);
-  const ringEl = document.getElementById("cycleProgressRing");
-  ringEl.style.strokeDashoffset = String(offset);
-  ringEl.style.stroke = s.colorVar;
-
-  const angleRad = (progressRatio * 360 - 90) * (Math.PI / 180);
-  const dotX = 125 + 102 * Math.cos(angleRad);
-  const dotY = 125 + 102 * Math.sin(angleRad);
-  const dotEl = document.getElementById("cycleDotIndicator");
-  dotEl.setAttribute("cx", dotX.toFixed(1));
-  dotEl.setAttribute("cy", dotY.toFixed(1));
-  dotEl.setAttribute("stroke", s.colorVar);
-
-  // 更新荷尔蒙游标线
-  const cursorX = Math.min(392, Math.max(8, Math.round(progressRatio * 400)));
-  const cursorLine = document.getElementById("hormoneCursorLine");
-  const cursorDot = document.getElementById("hormoneCursorDot");
-  cursorLine.setAttribute("x1", String(cursorX));
-  cursorLine.setAttribute("x2", String(cursorX));
-  cursorLine.setAttribute("stroke", s.colorVar);
-  cursorDot.setAttribute("cx", String(cursorX));
-  cursorDot.setAttribute("fill", s.colorVar);
-
-  // 一键打卡按钮状态
   const todayStr = toDateStr(new Date());
   const todayInPeriod = isDateInLoggedPeriod(todayStr, stats.sortedCycles, stats.avgPeriodLen);
-  const quickBtn = document.getElementById("quickPeriodToggleBtn");
-  document.getElementById("quickBtnIcon").textContent = todayInPeriod ? "🌿" : camo ? "🌑" : "🩸";
-  document.getElementById("quickBtnText").textContent = todayInPeriod
-    ? camo
-      ? "今日仍在潮汐期（点击标记结束）"
-      : "今日仍在经期（点击标记姨妈结束）"
-    : camo
-      ? "记录今日朔月潮汐开启"
-      : "今日大姨妈来了（一键打卡）";
-  quickBtn.style.background = s.colorVar;
+  document.getElementById("cycleDayLabel").textContent = stealth
+    ? "本月第几天"
+    : todayInPeriod
+      ? "正在经期"
+      : "当前周期";
+  document.getElementById("cycleDayNum").textContent = `第 ${stats.cycleDay} 天`;
+  document.getElementById("compassPhaseTitle").textContent = stealth ? s.stealthTitle : s.title;
 
-  // 渲染今日三维能量指南卡片
-  const guidesContainer = document.getElementById("dailyGuideCards");
-  guidesContainer.innerHTML = `
-    <div class="guide-item">
-      <div class="guide-icon" style="background: ${s.softVar}; color: ${s.colorVar};">🧠</div>
-      <div class="guide-content">
-        <h4>今日职场与脑力节律</h4>
-        <p>${s.work}</p>
+  const daysUntilNext = diffDays(stats.nextPredCenter, todayStr);
+  const nextHintEl = document.getElementById("compassNextHint");
+  if (todayInPeriod) {
+    const leftDays = Math.max(0, stats.avgPeriodLen - stats.cycleDay);
+    nextHintEl.textContent = leftDays > 0 ? `大概还有 ${leftDays} 天就舒服啦` : "快收尾了，辛苦啦";
+  } else if (daysUntilNext > 0) {
+    nextHintEl.textContent = stealth
+      ? `下次小雨约 ${daysUntilNext} 天后`
+      : `离下次大概还有 ${daysUntilNext} 天 · ${formatCNDate(stats.nextPredStart)}前后`;
+  } else if (daysUntilNext === 0) {
+    nextHintEl.textContent = stealth ? "今明两天可能会变天" : "差不多就在这两天，包里记得备一片";
+  } else {
+    const late = Math.abs(daysUntilNext);
+    nextHintEl.textContent = stealth
+      ? `比平时晚了 ${late} 天，别着急`
+      : `晚点了 ${late} 天，先别慌，最近累了吗？`;
+  }
+
+  // 圆环与四季参考弧
+  const C = 2 * Math.PI * 98; // 615.75
+  const ratio = Math.min(1, Math.max(0.03, stats.cycleDay / stats.avgCycleLen));
+  const ring = document.getElementById("cycleProgressRing");
+  ring.setAttribute("stroke-dasharray", C.toFixed(2));
+  ring.setAttribute("stroke-dashoffset", (C * (1 - ratio)).toFixed(2));
+
+  const winterArc = C * (stats.avgPeriodLen / stats.avgCycleLen);
+  document.getElementById("seasonArcWinter").setAttribute("stroke-dasharray", `${winterArc.toFixed(1)} ${C.toFixed(1)}`);
+  const summerStart = (stats.ovulationDayNum - 2) / stats.avgCycleLen;
+  const summerArc = C * (5 / stats.avgCycleLen);
+  const summerEl = document.getElementById("seasonArcSummer");
+  summerEl.setAttribute("stroke-dasharray", `${summerArc.toFixed(1)} ${C.toFixed(1)}`);
+  summerEl.setAttribute("stroke-dashoffset", (-C * summerStart).toFixed(1));
+
+  const angleRad = (ratio * 360 - 90) * (Math.PI / 180);
+  const dot = document.getElementById("cycleDotIndicator");
+  dot.setAttribute("cx", (120 + 98 * Math.cos(angleRad)).toFixed(1));
+  dot.setAttribute("cy", (120 + 98 * Math.sin(angleRad)).toFixed(1));
+
+  // 更新内圆水波高度
+  const wy = s.waveLevel || 154;
+  document.getElementById("tideWaveBack").setAttribute("d", `M 20,${wy} Q 70,${wy - 12} 120,${wy} T 220,${wy} T 320,${wy} L 320,220 L 20,220 Z`);
+  document.getElementById("tideWaveFront").setAttribute("d", `M 20,${wy + 8} Q 70,${wy - 4} 120,${wy + 8} T 220,${wy + 8} T 320,${wy + 8} L 320,220 L 20,220 Z`);
+
+  // 活人感气泡
+  const bubble = document.getElementById("companionBubble");
+  bubble.classList.toggle("is-ceo", persona === "ceo");
+  document.getElementById("companionAvatar").textContent = persona === "ceo" ? "总" : "搭";
+  document.getElementById("companionName").textContent = persona === "ceo" ? "霸总管家" : "手帐搭子";
+  document.getElementById("companionTag").textContent = lastCompanionOverride ? "刚收到你的信号" : "今日悄悄话";
+  document.getElementById("companionMessage").textContent = lastCompanionOverride || s.note;
+
+  // 主打卡按钮
+  document.getElementById("quickBtnText").textContent = todayInPeriod
+    ? stealth ? "今天放晴了（标记结束）" : "今天结束了"
+    : stealth ? "记录今天开始下雨" : "今天来了";
+
+  // 渲染互动波浪曲线
+  const paths = buildWavePaths();
+  document.getElementById("energyAreaPath").setAttribute("d", paths.energyArea);
+  document.getElementById("energyLinePath").setAttribute("d", paths.energyLine);
+  document.getElementById("sensitivityLinePath").setAttribute("d", paths.sensLine);
+  updateWaveCursor(waveHoverRatio !== null ? waveHoverRatio : ratio, stats, stealth);
+
+  // 今日贴心小贴士
+  document.getElementById("dailyGuideCards").innerHTML = `
+    <div class="tip-card">
+      <div class="tip-badge">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div>
+        <h4>今天适合怎么安排事</h4>
+        <p>${escapeHtml(s.work)}</p>
       </div>
     </div>
-    <div class="guide-item">
-      <div class="guide-icon" style="background: var(--season-spring-soft); color: var(--season-spring);">🧘‍♀️</div>
-      <div class="guide-content">
-        <h4>运动与身体顺应指南</h4>
-        <p>${s.sport}</p>
+    <div class="tip-card">
+      <div class="tip-badge" style="color: var(--season-spring);">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      </div>
+      <div>
+        <h4>身体怎么动更舒服</h4>
+        <p>${escapeHtml(s.sport)}</p>
       </div>
     </div>
-    <div class="guide-item guide-reassurance">
-      <div class="guide-icon" style="background: rgba(255,255,255,0.65);">🫂</div>
-      <div class="guide-content">
-        <h4>荷尔蒙情绪解绑卡</h4>
-        <p>${s.reassurance}</p>
+    <div class="tip-card highlight">
+      <div class="tip-badge">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      </div>
+      <div>
+        <h4>给你兜底的一句话</h4>
+        <p>${escapeHtml(s.note)}</p>
       </div>
     </div>
   `;
 }
 
-// 渲染右栏：3秒身体胶囊面板
-function renderCapsuleLogger(camo) {
+function updateWaveCursor(ratio, stats, stealth) {
+  const clamped = Math.min(0.99, Math.max(0.01, ratio));
+  const x = (clamped * 400).toFixed(1);
+  const { yEnergy, ySens } = evalWaveY(clamped);
+
+  const line = document.getElementById("hormoneCursorLine");
+  line.setAttribute("x1", x);
+  line.setAttribute("x2", x);
+
+  const eDot = document.getElementById("energyCursorDot");
+  eDot.setAttribute("cx", x);
+  eDot.setAttribute("cy", yEnergy.toFixed(1));
+
+  const sDot = document.getElementById("sensitivityCursorDot");
+  sDot.setAttribute("cx", x);
+  sDot.setAttribute("cy", ySens.toFixed(1));
+
+  const previewDay = Math.max(1, Math.min(stats.avgCycleLen, Math.round(clamped * stats.avgCycleLen) || 1));
+  const daySeason = getSeasonForDay(previewDay, stats.avgPeriodLen, stats.ovulationDayNum, stats.avgCycleLen);
+  const label = document.getElementById("wavePreviewLabel");
+  if (waveHoverRatio !== null) {
+    label.textContent = `预览第 ${previewDay} 天 · ${stealth ? daySeason.stealthTitle : daySeason.title}`;
+  } else {
+    label.textContent = `现在在第 ${stats.cycleDay} 天 · 点按或滑动波浪可看每一天`;
+  }
+}
+
+function renderCapsuleLogger(stealth) {
   const todayStr = toDateStr(new Date());
   const isToday = selectedDateStr === todayStr;
-  document.getElementById("loggerCardTitle").textContent = camo ? "3秒月相电波记录" : "3秒身体胶囊记录";
-  document.getElementById("selectedDateDisplay").textContent =
-    `正在记录：${formatCNDate(selectedDateStr)} ${isToday ? "（今天）" : "（点击日历可切换日期）"}`;
+  document.getElementById("loggerCardTitle").textContent = stealth ? "今天天气和体感" : "今天感觉怎么样？";
+  document.getElementById("selectedDateDisplay").textContent = isToday
+    ? "正在记：今天（点完自动保存）"
+    : `正在补记：${formatCNDate(selectedDateStr)}（点完自动保存）`;
 
   const hideIntimate = Boolean(appState.settings.hideIntimateTags);
-  document.getElementById("toggleIntimateTagsBtn").textContent = hideIntimate
-    ? "👁️ 显示私密标签"
-    : "🙈 隐藏私密标签";
+  document.getElementById("toggleIntimateTagsBtn").textContent = hideIntimate ? "显示私密项" : "隐藏私密项";
 
   const dayLog = appState.logs[selectedDateStr] || { tags: [], note: "" };
   const activeTags = new Set(dayLog.tags || []);
 
-  const container = document.getElementById("capsuleGroupsContainer");
-  container.innerHTML = SYMPTOM_GROUPS.filter(g => !(hideIntimate && g.intimate))
+  document.getElementById("capsuleGroupsContainer").innerHTML = SYMPTOM_GROUPS.filter(
+    g => !(hideIntimate && g.intimate)
+  )
     .map(group => {
-      const groupTitle = camo ? group.camoTitle : group.title;
-      const buttonsHtml = group.items
-        .map(item => {
-          const isSelected = activeTags.has(item.id);
-          const text = camo ? item.camo : item.label;
-          return `<button type="button" class="capsule-btn ${isSelected ? "selected" : ""}" data-tag-id="${item.id}">${text}</button>`;
+      const title = stealth ? group.stealthTitle : group.title;
+      const btns = group.items
+        .map(it => {
+          const on = activeTags.has(it.id);
+          return `<button type="button" class="capsule-btn ${on ? "selected" : ""}" data-tag-id="${it.id}">${escapeHtml(stealth ? it.stealth : it.label)}</button>`;
         })
         .join("");
-
-      return `
-        <div class="symptom-group">
-          <div class="symptom-group-title">
-            <span>${groupTitle}</span>
-          </div>
-          <div class="capsule-grid">${buttonsHtml}</div>
-        </div>
-      `;
+      return `<div><div class="symptom-group-title">${escapeHtml(title)}</div><div class="capsule-grid">${btns}</div></div>`;
     })
     .join("");
 
@@ -565,381 +614,480 @@ function renderCapsuleLogger(camo) {
   }
 }
 
-// 渲染 Tab 2：四季色彩智能日历 & 身体规律自检报告
-function renderCalendarTab(stats, camo) {
+// ==================== Tab 2: 日历与原地日期抽屉 ====================
+function renderCalendarTab(stats, stealth) {
   const year = calendarViewDate.getFullYear();
   const month = calendarViewDate.getMonth();
   document.getElementById("calendarMonthTitle").textContent = `${year}年 ${month + 1}月`;
+  document.getElementById("legendPeriodText").textContent = stealth ? "小雨日" : "记过的经期";
+  document.getElementById("legendPredText").textContent = stealth ? "预计变天" : "预计会来";
 
   const firstDay = new Date(year, month, 1);
-  const startWeekday = (firstDay.getDay() + 6) % 7; // 周一为 0
+  const startWeekday = (firstDay.getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayStr = toDateStr(new Date());
+  const eventDates = new Set((appState.events || []).map(e => e.date));
 
   const cells = [];
-  for (let i = 0; i < startWeekday; i++) {
-    cells.push(`<div class="cal-day empty"></div>`);
-  }
+  for (let i = 0; i < startWeekday; i++) cells.push(`<div class="cal-day empty"></div>`);
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     const inPeriod = isDateInLoggedPeriod(dateStr, stats.sortedCycles, stats.avgPeriodLen);
     const pred = getFutureDatePrediction(dateStr, stats);
-    const hasLog =
-      appState.logs[dateStr] &&
-      ((appState.logs[dateStr].tags && appState.logs[dateStr].tags.length > 0) ||
-        (appState.logs[dateStr].note && appState.logs[dateStr].note.trim().length > 0));
+    const log = appState.logs[dateStr];
+    const hasLog = log && ((log.tags && log.tags.length) || (log.note && log.note.trim()));
+    const hasEvent = eventDates.has(dateStr);
 
-    const classes = ["cal-day"];
-    if (dateStr === todayStr) classes.push("is-today");
-    if (dateStr === selectedDateStr) classes.push("selected-day");
-    if (inPeriod) {
-      classes.push("is-period");
-    } else if (pred.type === "predicted-period") {
-      classes.push("is-predicted-period");
-    } else if (pred.type === "ovulation") {
-      classes.push("is-ovulation");
-    }
+    const cls = ["cal-day"];
+    if (dateStr === todayStr) cls.push("is-today");
+    if (dateStr === selectedDateStr) cls.push("selected-day");
+    if (inPeriod) cls.push("is-period");
+    else if (pred.type === "predicted-period") cls.push("is-predicted-period");
+    else if (pred.type === "ovulation") cls.push("is-ovulation");
 
     cells.push(`
-      <div class="${classes.join(" ")}" data-date="${dateStr}" title="点击查看或记录 ${dateStr}">
+      <button type="button" class="${cls.join(" ")}" data-date="${dateStr}">
         <span>${d}</span>
-        ${hasLog ? '<i class="cal-day-dot"></i>' : ""}
-      </div>
+        <span class="cal-dots">
+          ${hasLog ? '<i class="cal-dot"></i>' : ""}
+          ${hasEvent ? '<i class="cal-dot event"></i>' : ""}
+        </span>
+      </button>
     `);
   }
-
   document.getElementById("calendarGrid").innerHTML = cells.join("");
 
-  // 右侧规律统计
+  renderCalendarDayDrawer(stats, stealth);
+
+  // 统计卡
   const isRegular = stats.variation <= 7 && stats.avgCycleLen >= 21 && stats.avgCycleLen <= 35;
   document.getElementById("insightMetricsGrid").innerHTML = `
-    <div class="doctor-metric-box" style="background: var(--bg-card-solid);">
-      <div class="doctor-metric-label">加权平均周期长度</div>
-      <div class="doctor-metric-val" style="color: var(--text-primary);">${stats.avgCycleLen} 天</div>
-      <div class="doctor-metric-sub">医学参考常态：21 ~ 35 天</div>
+    <div class="stat-tile">
+      <div class="stat-tile-label">平均多久来一次</div>
+      <div class="stat-tile-val">${stats.avgCycleLen} 天</div>
+      <div class="stat-tile-sub">常见范围 21~35 天</div>
     </div>
-    <div class="doctor-metric-box" style="background: var(--bg-card-solid); border-left-color: var(--season-spring);">
-      <div class="doctor-metric-label">平均${camo ? "潮汐" : "经期"}持续天数</div>
-      <div class="doctor-metric-val" style="color: var(--text-primary);">${stats.avgPeriodLen} 天</div>
-      <div class="doctor-metric-sub">医学参考常态：3 ~ 7 天</div>
+    <div class="stat-tile" style="border-left-color: var(--season-spring);">
+      <div class="stat-tile-label">每次大概持续</div>
+      <div class="stat-tile-val">${stats.avgPeriodLen} 天</div>
+      <div class="stat-tile-sub">常见范围 3~7 天</div>
     </div>
-    <div class="doctor-metric-box" style="background: var(--bg-card-solid); border-left-color: var(--season-summer);">
-      <div class="doctor-metric-label">近半年周期最大波动差</div>
-      <div class="doctor-metric-val" style="color: var(--text-primary);">±${Math.round(stats.variation / 2)} 天（差值 ${stats.variation} 天）</div>
-      <div class="doctor-metric-sub">${isRegular ? "✅ 节律非常稳健" : "💡 存在波动，已启用弹性窗口"}</div>
+    <div class="stat-tile" style="border-left-color: var(--season-summer);">
+      <div class="stat-tile-label">最近波动幅度</div>
+      <div class="stat-tile-val">±${stats.spread} 天</div>
+      <div class="stat-tile-sub">${isRegular ? "节奏很稳" : "有点浮动，已按区间估"}</div>
     </div>
-    <div class="doctor-metric-box" style="background: var(--bg-card-solid); border-left-color: var(--season-autumn);">
-      <div class="doctor-metric-label">下次黄金高能期 (排卵窗口)</div>
-      <div class="doctor-metric-val" style="color: var(--text-primary); font-size: 18px;">
-        ${formatCNDate(addDays(stats.lmpDate, stats.ovulationDayNum - 2))} ~ ${formatCNDate(addDays(stats.lmpDate, stats.ovulationDayNum + 2))}
-      </div>
-      <div class="doctor-metric-sub">精力与表达力峰值期</div>
+    <div class="stat-tile" style="border-left-color: var(--season-autumn);">
+      <div class="stat-tile-label">下次高光日</div>
+      <div class="stat-tile-val" style="font-size:15.5px;">${formatCNDate(addDays(stats.lmpDate, stats.ovulationDayNum - 2))} ~ ${formatCNDate(addDays(stats.lmpDate, stats.ovulationDayNum + 2))}</div>
+      <div class="stat-tile-sub">精力与状态通常最好</div>
     </div>
   `;
 
-  // 历史周期列表（支持勾选排除异常周期）
-  const historyContainer = document.getElementById("cycleHistoryList");
-  historyContainer.innerHTML = stats.historyRows
-    .map(row => {
-      const lenBadge = row.cycleLen
-        ? `周期 ${row.cycleLen} 天`
-        : "当前进行中周期";
+  // 历史列表
+  document.getElementById("cycleHistoryList").innerHTML = stats.historyRows
+    .map(row => `
+      <div class="history-row">
+        <div>
+          <strong>${formatCNDate(row.startDate)} ~ ${formatCNDate(row.endDate)}（${row.duration}天）</strong>
+          <small>${row.cycleLen ? `间隔 ${row.cycleLen} 天` : "本次周期进行中"}${row.excluded ? " · 已忽略偶发波动" : ""}</small>
+        </div>
+        <div class="history-row-ops">
+          <label class="exclude-label">
+            <input type="checkbox" class="exclude-cycle-cb" data-cycle-id="${row.id}" ${row.excluded ? "checked" : ""} />
+            忽略异常
+          </label>
+          <button type="button" class="chip-action delete-cycle-btn" data-cycle-id="${row.id}">删</button>
+        </div>
+      </div>
+    `)
+    .join("");
+}
+
+function renderCalendarDayDrawer(stats, stealth) {
+  const drawer = document.getElementById("calendarDayDrawer");
+  const dateStr = selectedDateStr;
+  const inPeriod = isDateInLoggedPeriod(dateStr, stats.sortedCycles, stats.avgPeriodLen);
+  const pred = getFutureDatePrediction(dateStr, stats);
+  const dayLog = appState.logs[dateStr] || { tags: [], note: "" };
+  const activeTags = new Set(dayLog.tags || []);
+  const dayEvents = (appState.events || []).filter(e => e.date === dateStr);
+
+  // 抽屉放 8 个最高频标签，方便在日历页原地随手点
+  const quickIds = ["flow_medium", "flow_heavy", "pain_cramps_mild", "pain_cramps_heavy", "mood_tired", "mood_irritable", "mood_craving", "med_painkiller"];
+  const itemMap = {};
+  SYMPTOM_GROUPS.forEach(g => g.items.forEach(it => { itemMap[it.id] = it; }));
+
+  const quickChipsHtml = quickIds
+    .map(id => {
+      const it = itemMap[id];
+      if (!it) return "";
+      const on = activeTags.has(id);
+      return `<button type="button" class="capsule-btn drawer-tag-btn ${on ? "selected" : ""}" data-tag-id="${id}">${escapeHtml(stealth ? it.stealth : it.label)}</button>`;
+    })
+    .join("");
+
+  const phaseText = inPeriod
+    ? (stealth ? "记过的小雨日" : "记过的经期")
+    : pred.type === "predicted-period"
+      ? (stealth ? "预计可能会下雨" : "预计会在这几天来")
+      : (stealth ? pred.season.stealthTitle : pred.season.title);
+
+  const eventBanner = dayEvents.length
+    ? `<p class="drawer-phase-sub" style="color:var(--season-spring); margin-top:4px;">大事记：${dayEvents.map(e => escapeHtml(e.name)).join("、")}</p>`
+    : "";
+
+  drawer.innerHTML = `
+    <div class="drawer-top">
+      <div>
+        <div class="drawer-date-title">${formatCNDate(dateStr)} ${dateStr === toDateStr(new Date()) ? "· 今天" : ""}</div>
+        <div class="drawer-phase-sub">${escapeHtml(phaseText)}</div>
+        ${eventBanner}
+      </div>
+      <button type="button" class="chip-action" id="drawerStartPeriodBtn">
+        ${inPeriod ? "这天已记经期" : "设为这天开始"}
+      </button>
+    </div>
+    <div class="drawer-quick-tags">${quickChipsHtml}</div>
+    <textarea id="drawerNoteInput" class="journal-textarea" rows="2" placeholder="给 ${formatCNDate(dateStr)} 留一句手帐备注…">${escapeHtml(dayLog.note || "")}</textarea>
+  `;
+}
+
+// ==================== Tab 3: 工具箱（基础壳子，Milestone 3 将全面升级出图/呼吸/多日程） ====================
+function renderToolkitTab(stats, stealth, persona) {
+  const s = stats.seasonInfo;
+  const tone = appState.settings.partnerTone || "gentle";
+  document.querySelectorAll("#receiptTonePills [data-partner-tone]").forEach(btn => {
+    btn.classList.toggle("selected", btn.getAttribute("data-partner-tone") === tone);
+  });
+
+  document.getElementById("partnerReceiptPreview").innerHTML = `
+    <div class="receipt-head">
+      <div class="receipt-store">TIDELOG 今日生存小票</div>
+      <div class="receipt-meta">${toDateStr(new Date())} · 周期第 ${stats.cycleDay} 天</div>
+    </div>
+    <p class="receipt-quote">“${escapeHtml(s.note)}”</p>
+    <div class="receipt-rows">
+      <div class="receipt-row"><strong>当前状态</strong><span>${escapeHtml(s.title)}</span></div>
+      <div class="receipt-row"><strong>今日建议</strong><span>${escapeHtml(s.work)}</span></div>
+      <div class="receipt-row"><strong>身体照顾</strong><span>${escapeHtml(s.sport)}</span></div>
+    </div>
+    <div class="receipt-barcode">|||| ||| || |||| ||| TIDELOG</div>
+  `;
+
+  document.getElementById("monthlySlicePreview").innerHTML = `
+    <div class="slice-top">
+      <span>TIDELOG 月度身体切片</span>
+      <span>${new Date().getFullYear()}.${String(new Date().getMonth() + 1).padStart(2, "0")}</span>
+    </div>
+    <div class="slice-title">这个月，也好好照顾了自己</div>
+    <div class="slice-stats">
+      <div class="slice-stat-box"><strong>${stats.avgPeriodLen}天</strong><span>安心休整</span></div>
+      <div class="slice-stat-box"><strong>${Object.keys(appState.logs).length}次</strong><span>手帐记录</span></div>
+      <div class="slice-stat-box"><strong>${stats.avgCycleLen}天</strong><span>身体节奏</span></div>
+    </div>
+    <div class="slice-footer-quote">“不是每天都要满格运转，允许自己跟着潮汐起伏。”</div>
+  `;
+
+  renderEventsPanel(stats);
+  renderDoctorPanel(stats);
+  renderReliefTips();
+}
+
+function renderReliefTips() {
+  const tips = [
+    { t: "止痛药别等到痛到发抖才吃", d: "布洛芬是拦住前列腺素生成的，刚觉得小腹发坠时吃效果最好，饭后温水送服。" },
+    { t: "暖贴贴在下腹或后腰（别直接贴皮肤）", d: "40°C 左右的温热能帮子宫平滑肌放松，怕闷可以隔着棉质内衣贴在后腰。" },
+    { t: "想吃甜的或热碳水，别跟自己较劲", d: "热豆浆、红豆汤、烤红薯或一小块黑巧，稳住血糖的同时也能让情绪软下来。" }
+  ];
+  document.getElementById("reliefTipsList").innerHTML = tips
+    .map(x => `<div class="relief-tip"><strong>${x.t}</strong><span>${x.d}</span></div>`)
+    .join("");
+}
+
+function renderEventsPanel(stats) {
+  const listEl = document.getElementById("savedEventsList");
+  const events = appState.events || [];
+  if (!events.length) {
+    listEl.innerHTML = `<p class="section-sub">还没有记大事记，在上面添一个吧。</p>`;
+    document.getElementById("eventCollisionResult").innerHTML = `<p class="section-sub">添加日程后，这里会告诉你当天状态和打包建议。</p>`;
+    return;
+  }
+  if (!events.some(e => e.id === selectedEventId)) selectedEventId = events[0].id;
+
+  const todayStr = toDateStr(new Date());
+  listEl.innerHTML = events
+    .map(ev => {
+      const pred = getFutureDatePrediction(ev.date, stats);
+      const isHit = pred.season.key === "winter";
+      const daysLeft = diffDays(ev.date, todayStr);
+      const countTxt = daysLeft > 0 ? `${daysLeft} 天后` : daysLeft === 0 ? "就是今天" : "已过去";
       return `
-        <div class="guide-item" style="align-items: center; justify-content: space-between; padding: 12px 16px;">
-          <div>
-            <h4 style="font-size: 14px;">${formatCNDate(row.startDate)} ~ ${formatCNDate(row.endDate)}（持续 ${row.duration} 天）</h4>
-            <p style="font-size: 12px;">${lenBadge} ${row.excluded ? "· ⚠️ 已标记为偶发异常（不计入均值）" : ""}</p>
+        <div class="event-item ${ev.id === selectedEventId ? "active" : ""}" data-event-id="${ev.id}">
+          <div class="event-item-meta">
+            <strong>${escapeHtml(ev.name)}</strong>
+            <small>${formatCNDate(ev.date)} · ${countTxt}</small>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px;">
-              <input type="checkbox" class="exclude-cycle-cb" data-cycle-id="${row.id}" ${row.excluded ? "checked" : ""} />
-              排除异常
-            </label>
-            <button type="button" class="btn-secondary delete-cycle-btn" data-cycle-id="${row.id}" style="padding: 4px 10px; font-size: 12px;">删除</button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="event-badge" style="background:${pred.season.softVar};color:${pred.season.colorVar};">${isHit ? "可能撞期" : pred.season.chip.split("·")[0].trim()}</span>
+            <button type="button" class="chip-action delete-event-btn" data-event-id="${ev.id}">删</button>
           </div>
         </div>
       `;
     })
     .join("");
+
+  const cur = events.find(e => e.id === selectedEventId);
+  if (!cur) return;
+  const pred = getFutureDatePrediction(cur.date, stats);
+  const s = pred.season;
+  document.getElementById("eventCollisionResult").innerHTML = `
+    <div class="tip-card highlight">
+      <div>
+        <h4>${escapeHtml(cur.name)}（${formatCNDate(cur.date)}）</h4>
+        <p style="margin-top:4px;">预计处于 <strong>${escapeHtml(s.title)}</strong>（周期约第 ${pred.modDay} 天）。</p>
+        <p style="margin-top:6px;">${s.key === "winter" ? "大概率会撞上经期，建议提前备好卫生巾/棉条、止痛药和暖贴，行程留出休息空隙。" : s.key === "autumn" ? "临近经期，包里顺手塞一片护垫防提前来潮，别把日程排太满。" : "状态很好，基本避开了难受的那几天，放心享受吧！"}</p>
+      </div>
+    </div>
+  `;
 }
 
-// 渲染 Tab 3：妇科门诊就医一键小抄 (Doctor's Card)
-function renderDoctorTab(stats) {
-  // 汇总近 90 天内记录的高频症状
+function renderDoctorPanel(stats) {
+  const selectedQ = new Set(appState.doctorQuestions || []);
+  document.getElementById("doctorQuestionChips").innerHTML = DOCTOR_QUESTIONS.map(q => {
+    const on = selectedQ.has(q);
+    return `<button type="button" class="capsule-btn doctor-q-btn ${on ? "selected" : ""}" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`;
+  }).join("");
+
   const tagCounts = {};
   const labelMap = {};
   SYMPTOM_GROUPS.forEach(g => g.items.forEach(it => { labelMap[it.id] = it.label; }));
-
-  Object.entries(appState.logs).forEach(([, log]) => {
-    (log.tags || []).forEach(t => {
-      tagCounts[t] = (tagCounts[t] || 0) + 1;
-    });
-  });
+  Object.values(appState.logs).forEach(log => (log.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
 
   const topSymptoms = Object.entries(tagCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([id, count]) => `${labelMap[id] || id} (${count}次)`)
-    .join("、") || "近期无特殊不适标记";
+    .map(([id, c]) => `${labelMap[id] || id}(${c}次)`)
+    .join("、") || "近期无明显不适记录";
 
   const rowsHtml = stats.historyRows
     .slice(0, 6)
     .map((r, idx) => `
       <tr>
-        <td>第 ${idx + 1} 近周期</td>
+        <td>近第 ${idx + 1} 次</td>
         <td><strong>${r.startDate}</strong></td>
-        <td>${r.endDate || "--"} (${r.duration} 天)</td>
-        <td>${r.cycleLen ? r.cycleLen + " 天" : "当前周期 (Day " + stats.cycleDay + ")"}</td>
-        <td>${r.excluded ? "偶发异常(熬夜/压力)" : "正常"}</td>
+        <td>${r.endDate || "--"}（${r.duration}天）</td>
+        <td>${r.cycleLen ? r.cycleLen + "天" : `进行中(第${stats.cycleDay}天)`}</td>
+        <td>${r.excluded ? "偶发异常" : "正常"}</td>
       </tr>
     `)
     .join("");
 
+  const qBlock = (appState.doctorQuestions || []).length
+    ? `<div style="margin-top:14px;padding:12px 14px;background:#F7F5F0;border-radius:12px;">
+        <div style="font-size:12px;font-weight:700;color:#4A443F;margin-bottom:4px;">本次想咨询医生的问题：</div>
+        <ul style="padding-left:18px;font-size:13px;color:#1A1A1A;line-height:1.6;">
+          ${appState.doctorQuestions.map(q => `<li>${escapeHtml(q)}</li>`).join("")}
+        </ul>
+      </div>`
+    : "";
+
   document.getElementById("doctorSheetContent").innerHTML = `
     <div class="doctor-sheet-header">
       <div>
-        <h3>妇科门诊月经史临床摘要卡 (Clinical Menstrual Summary)</h3>
-        <p style="font-size: 12.5px; color: #555; margin-top: 4px;">生成日期：${toDateStr(new Date())} · 供临床问诊快速查阅</p>
+        <h3>妇科门诊月经史摘要</h3>
+        <p style="font-size:12px;color:#5E5752;margin-top:2px;">生成日期：${toDateStr(new Date())} · 供医生快速查阅</p>
       </div>
-      <span style="background: #2B2523; color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">
-        当前处于周期 Day ${stats.cycleDay}
+      <span style="background:#2A2523;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;">
+        当前周期第 ${stats.cycleDay} 天
       </span>
     </div>
-
     <div class="doctor-metrics-grid">
       <div class="doctor-metric-box">
-        <div class="doctor-metric-label">末次月经首日 (LMP - Last Menstrual Period)</div>
+        <div class="doctor-metric-label">末次月经第一天 (LMP)</div>
         <div class="doctor-metric-val">${stats.lmpDate}</div>
         <div class="doctor-metric-sub">距今第 ${stats.cycleDay} 天</div>
       </div>
       <div class="doctor-metric-box">
-        <div class="doctor-metric-label">既往周期区间 / 平均周期</div>
-        <div class="doctor-metric-val">${stats.minCycle} ~ ${stats.maxCycle} 天（均值 ${stats.avgCycleLen} 天）</div>
-        <div class="doctor-metric-sub">近半年最大周期差值：${stats.variation} 天</div>
+        <div class="doctor-metric-label">既往周期范围 / 均值</div>
+        <div class="doctor-metric-val">${stats.minCycle}~${stats.maxCycle} 天（均 ${stats.avgCycleLen} 天）</div>
+        <div class="doctor-metric-sub">最大波动差 ${stats.variation} 天</div>
       </div>
       <div class="doctor-metric-box">
-        <div class="doctor-metric-label">平均行经持续天数</div>
+        <div class="doctor-metric-label">平均行经天数</div>
         <div class="doctor-metric-val">${stats.avgPeriodLen} 天</div>
-        <div class="doctor-metric-sub">正常参考值 3~7 天</div>
+        <div class="doctor-metric-sub">常见参考值 3~7 天</div>
       </div>
       <div class="doctor-metric-box">
-        <div class="doctor-metric-label">近期主诉与高频伴随症状</div>
-        <div class="doctor-metric-val" style="font-size: 14.5px; line-height: 1.45;">${topSymptoms}</div>
+        <div class="doctor-metric-label">近期高频伴随症状</div>
+        <div class="doctor-metric-val" style="font-size:14px;line-height:1.45;">${escapeHtml(topSymptoms)}</div>
       </div>
     </div>
-
-    <h4 style="font-size: 14px; margin-bottom: 8px; color: #222;">近 6 次月经起止明细表</h4>
-    <table class="doctor-history-table">
-      <thead>
-        <tr>
-          <th>序次</th>
-          <th>来潮首日</th>
-          <th>结束日期 (行经天数)</th>
-          <th>周期长度</th>
-          <th>备注</th>
-        </tr>
-      </thead>
-      <tbody>${rowsHtml}</tbody>
-    </table>
+    <div class="doctor-table-wrap">
+      <table class="doctor-history-table">
+        <thead><tr><th>序次</th><th>来潮首日</th><th>结束日期</th><th>周期</th><th>备注</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    ${qBlock}
   `;
 }
 
-// 渲染 Tab 4：伴侣关怀行动卡 & 重要日程撞期测算器
-function renderToolkitTab(stats) {
-  const tone = appState.settings.partnerTone || "science";
-  document.querySelectorAll("[data-partner-tone]").forEach(btn => {
-    btn.classList.toggle("selected", btn.getAttribute("data-partner-tone") === tone);
+function renderMineTab(stealth, persona, theme) {
+  document.querySelectorAll("[data-persona]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-persona") === persona);
   });
-
-  const s = stats.seasonInfo;
-  const copyData =
-    tone === "witty"
-      ? s.partnerWitty
-      : tone === "minimal"
-        ? s.partnerMinimal
-        : s.partnerScience;
-
-  document.getElementById("partnerCardPreview").innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <span class="season-badge" style="background: ${s.softVar}; color: ${s.colorVar};">${s.badge}</span>
-      <span style="font-size: 12px; color: var(--text-secondary);">周期 Day ${stats.cycleDay}</span>
-    </div>
-    <p class="partner-card-quote">“${copyData.quote}”</p>
-    <div class="partner-dos-donts">
-      <div class="partner-box">${copyData.dos}</div>
-      <div class="partner-box">${copyData.donts}</div>
-    </div>
-  `;
-
-  // 初始化撞期测算默认日期为 25 天后
-  const eventDateInput = document.getElementById("eventDateInput");
-  if (!eventDateInput.value) {
-    eventDateInput.value = addDays(toDateStr(new Date()), 24);
-  }
-  renderEventCollisionResult(stats);
-}
-
-function renderEventCollisionResult(stats) {
-  const eventName = document.getElementById("eventNameInput").value.trim() || "重要日程";
-  const targetDate = document.getElementById("eventDateInput").value;
-  if (!targetDate) return;
-
-  const pred = getFutureDatePrediction(targetDate, stats);
-  const s = pred.season;
-  const isCollision = s.key === "winter";
-
-  const checklist =
-    s.key === "winter"
-      ? "🎒 <strong>撞期应对包</strong>：预计当天正处于经期！建议提前备好日夜用卫生巾/棉条（水上活动可备棉条或月经杯）、布洛芬止痛药、便携暖宫贴；若为不可推迟的高考/重要比赛，建议提前 1 个月咨询妇科医生评估安全药物调经。"
-      : s.key === "autumn"
-        ? "🍂 <strong>深秋缓冲建议</strong>：当天处于经前黄体期（距离来潮很近），体能耐力略降，建议包里随身备一片护垫/卫生巾防提前来潮，行程切勿排得过满，留出充足睡眠。"
-        : s.key === "summer"
-          ? "☀️ <strong>满分状态喜报</strong>：当天正处于【身体夏季 · 黄金高能期】！体能、上镜皮肤状态与抗压能力均在巅峰，尽情享受你的重要日程吧！"
-          : "🌱 <strong>轻盈复苏期</strong>：当天处于【身体春季 · 卵泡期】，完美避开经期与水肿期，精力充沛、心情明朗，非常适宜出行或迎战挑战！";
-
-  document.getElementById("eventCollisionResult").innerHTML = `
-    <div class="guide-item" style="border-color: ${s.colorVar}; background: ${s.softVar};">
-      <div class="guide-icon" style="background: var(--bg-card-solid); color: ${s.colorVar};">
-        ${isCollision ? "⚠️" : "✨"}
-      </div>
-      <div class="guide-content">
-        <h4>【${eventName} · ${formatCNDate(targetDate)}】预计处于：${s.title}（周期约 Day ${pred.modDay}）</h4>
-        <p style="margin-top: 6px; color: var(--text-primary);">${checklist}</p>
-      </div>
-    </div>
-  `;
-}
-
-function renderSettingsTab() {
+  document.querySelectorAll("[data-theme-choice]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-theme-choice") === theme);
+  });
+  document.getElementById("stealthSwitchMine").setAttribute("aria-checked", String(stealth));
   document.getElementById("settingCycleLen").value = appState.settings.defaultCycleLen || 29;
   document.getElementById("settingPeriodLen").value = appState.settings.defaultPeriodLen || 5;
 }
 
-// 绑定交互事件
+// ==================== 交互事件绑定 ====================
+function switchMainTab(targetId) {
+  document.querySelectorAll(".nav-pill, .mnav-btn").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-tab") === targetId);
+  });
+  document.querySelectorAll(".tab-panel").forEach(p => {
+    p.classList.toggle("active", p.id === targetId);
+  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function switchSubTab(subId) {
+  document.querySelectorAll(".subtab-btn").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-subtab") === subId);
+  });
+  document.querySelectorAll(".subtab-panel").forEach(p => {
+    p.classList.toggle("active", p.id === subId);
+  });
+}
+
+function toggleTagForDate(dateStr, tagId) {
+  if (!appState.logs[dateStr]) appState.logs[dateStr] = { tags: [], note: "" };
+  const tags = appState.logs[dateStr].tags;
+  const idx = tags.indexOf(tagId);
+  if (idx >= 0) tags.splice(idx, 1);
+  else tags.push(tagId);
+  saveState("已悄悄记下");
+}
+
 function bindEvents() {
-  // 顶部防社死月相暗语模式切换
-  document.getElementById("camouflageBtn").addEventListener("click", () => {
+  // 主导航（桌面 + 手机底部同步）
+  document.querySelectorAll(".nav-pill, .mnav-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchMainTab(btn.getAttribute("data-tab")));
+  });
+
+  // 工具箱子导航
+  document.querySelectorAll(".subtab-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchSubTab(btn.getAttribute("data-subtab")));
+  });
+
+  // 快捷跳到电子布洛芬急救角
+  document.getElementById("jumpReliefBtn").addEventListener("click", () => {
+    switchMainTab("tab-toolkit");
+    switchSubTab("sub-relief");
+  });
+
+  // 顶部快捷切换人设（温柔搭子 <-> 霸总模式）
+  document.getElementById("personaQuickBtn").addEventListener("click", () => {
+    appState.settings.persona = appState.settings.persona === "ceo" ? "gentle" : "ceo";
+    lastCompanionOverride = null;
+    saveState(appState.settings.persona === "ceo" ? "已切换为霸总模式" : "已切回温柔手帐搭子");
+  });
+
+  // 顶部和“我的”里的防窥天气模式开关
+  const toggleStealth = () => {
     appState.settings.camouflageMode = !appState.settings.camouflageMode;
-    saveState(
-      appState.settings.camouflageMode
-        ? "🌕 已开启月相暗语模式（办公室防社死保护中）"
-        : "🌿 已切换回身体四季自然模式"
-    );
-  });
+    saveState(appState.settings.camouflageMode ? "已切为晴雨天气手帐（防窥中）" : "已切回正常模式");
+  };
+  document.getElementById("stealthBtn").addEventListener("click", toggleStealth);
+  document.getElementById("stealthSwitchMine").addEventListener("click", toggleStealth);
 
-  // 顶部 Tabs 切换
-  document.querySelectorAll(".nav-tab").forEach(tabBtn => {
-    tabBtn.addEventListener("click", () => {
-      const targetId = tabBtn.getAttribute("data-tab");
-      document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-      tabBtn.classList.add("active");
-      document.getElementById(targetId).classList.add("active");
-    });
-  });
-
-  // 一键极速打卡（今日来潮 / 今日结束）
+  // 一键记录今天来了/结束
   document.getElementById("quickPeriodToggleBtn").addEventListener("click", () => {
     const todayStr = toDateStr(new Date());
     const stats = computeCycleStats(appState);
     const inPeriod = isDateInLoggedPeriod(todayStr, stats.sortedCycles, stats.avgPeriodLen);
-
     if (inPeriod) {
-      // 将最近一次经期结束日设为昨天（若今天就是首日则移除本次误触打卡）
       const latest = appState.cycles[appState.cycles.length - 1];
       if (latest) {
         if (latest.startDate === todayStr) {
           appState.cycles.pop();
-          saveState("已取消今日来潮打卡");
+          saveState("已撤销今天的开始记录");
         } else {
           latest.endDate = addDays(todayStr, -1);
-          saveState("🌿 已标记本次生理期结束，欢迎进入身体春季！");
+          saveState("好耶，这次结束啦，慢慢回血！");
         }
       }
     } else {
       const dur = Number(appState.settings.defaultPeriodLen) || 5;
-      appState.cycles.push({
-        id: "c_" + Date.now(),
-        startDate: todayStr,
-        endDate: addDays(todayStr, dur - 1),
-        excluded: false
-      });
-      saveState("🩸 已记录今日来潮，开启身体冬季休养模式");
+      appState.cycles.push({ id: "c_" + Date.now(), startDate: todayStr, endDate: addDays(todayStr, dur - 1), excluded: false });
+      saveState("记好啦，这几天好好照顾自己");
     }
   });
 
-  // 补录历史经期弹窗
+  // 互动波浪条点击/滑动预览
+  const waveWrap = document.getElementById("waveInteractiveWrap");
+  const handleWavePointer = clientX => {
+    const rect = waveWrap.getBoundingClientRect();
+    waveHoverRatio = Math.min(0.99, Math.max(0.01, (clientX - rect.left) / rect.width));
+    updateWaveCursor(waveHoverRatio, computeCycleStats(appState), Boolean(appState.settings.camouflageMode));
+  };
+  waveWrap.addEventListener("pointerdown", e => handleWavePointer(e.clientX));
+  waveWrap.addEventListener("pointermove", e => { if (e.buttons || e.pointerType === "mouse") handleWavePointer(e.clientX); });
+  waveWrap.addEventListener("pointerleave", () => {
+    waveHoverRatio = null;
+    const stats = computeCycleStats(appState);
+    updateWaveCursor(Math.min(1, Math.max(0.03, stats.cycleDay / stats.avgCycleLen)), stats, Boolean(appState.settings.camouflageMode));
+  });
+
+  // 补记弹窗
   const retroModal = document.getElementById("retroModal");
   const openRetro = () => {
     document.getElementById("retroStartDate").value = selectedDateStr;
-    document.getElementById("retroEndDate").value = addDays(
-      selectedDateStr,
-      (Number(appState.settings.defaultPeriodLen) || 5) - 1
-    );
+    document.getElementById("retroEndDate").value = addDays(selectedDateStr, (Number(appState.settings.defaultPeriodLen) || 5) - 1);
     retroModal.classList.add("open");
   };
   const closeRetro = () => retroModal.classList.remove("open");
-
   document.getElementById("openRetroModalBtn").addEventListener("click", openRetro);
+  document.getElementById("calendarAddRetroBtn").addEventListener("click", openRetro);
   document.getElementById("closeRetroModalBtn").addEventListener("click", closeRetro);
   document.getElementById("cancelRetroBtn").addEventListener("click", closeRetro);
+  retroModal.addEventListener("click", e => { if (e.target === retroModal) closeRetro(); });
 
   document.getElementById("confirmRetroBtn").addEventListener("click", () => {
     const start = document.getElementById("retroStartDate").value;
     let end = document.getElementById("retroEndDate").value;
-    if (!start) {
-      showToast("请选择来潮第一天日期");
-      return;
-    }
+    if (!start) return showToast("先选一下来的第一天");
     const dur = Number(appState.settings.defaultPeriodLen) || 5;
-    if (!end || end < start) {
-      end = addDays(start, dur - 1);
-    }
-    appState.cycles.push({
-      id: "c_" + Date.now(),
-      startDate: start,
-      endDate: end,
-      excluded: false
-    });
+    if (!end || end < start) end = addDays(start, dur - 1);
+    appState.cycles.push({ id: "c_" + Date.now(), startDate: start, endDate: end, excluded: false });
     closeRetro();
-    saveState("✍️ 周期记录已保存，预测模型已动态更新");
+    saveState("补记好了，预测已经跟着更新");
   });
 
-  // 胶囊症状点击委托
+  // 首页胶囊 & 笔记
   document.getElementById("capsuleGroupsContainer").addEventListener("click", e => {
-    const btn = e.target.closest(".capsule-btn");
-    if (!btn) return;
-    const tagId = btn.getAttribute("data-tag-id");
-    if (!appState.logs[selectedDateStr]) {
-      appState.logs[selectedDateStr] = { tags: [], note: "" };
-    }
-    const tags = appState.logs[selectedDateStr].tags;
-    const idx = tags.indexOf(tagId);
-    if (idx >= 0) {
-      tags.splice(idx, 1);
-    } else {
-      tags.push(tagId);
-    }
-    saveState("已记录今日身体胶囊");
+    const btn = e.target.closest(".capsule-btn[data-tag-id]");
+    if (btn) toggleTagForDate(selectedDateStr, btn.getAttribute("data-tag-id"));
   });
 
-  // 隐藏/显示私密标签
   document.getElementById("toggleIntimateTagsBtn").addEventListener("click", () => {
     appState.settings.hideIntimateTags = !appState.settings.hideIntimateTags;
-    saveState(appState.settings.hideIntimateTags ? "已隐藏私密与用药分类" : "已显示全部胶囊分类");
+    saveState(appState.settings.hideIntimateTags ? "已收起私密项" : "已显示全部选项");
   });
 
-  // 每日笔记自动保存
   document.getElementById("dailyNoteInput").addEventListener("input", e => {
-    if (!appState.logs[selectedDateStr]) {
-      appState.logs[selectedDateStr] = { tags: [], note: "" };
-    }
+    if (!appState.logs[selectedDateStr]) appState.logs[selectedDateStr] = { tags: [], note: "" };
     appState.logs[selectedDateStr].note = e.target.value;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
   });
 
-  // 日历月份切换与日期点击
+  // 日历导航与原地抽屉交互
   document.getElementById("prevMonthBtn").addEventListener("click", () => {
     calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
     renderAll();
@@ -948,23 +1096,52 @@ function bindEvents() {
     calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
     renderAll();
   });
+  document.getElementById("jumpTodayBtn").addEventListener("click", () => {
+    calendarViewDate = new Date();
+    selectedDateStr = toDateStr(new Date());
+    renderAll();
+  });
 
   document.getElementById("calendarGrid").addEventListener("click", e => {
     const cell = e.target.closest(".cal-day[data-date]");
     if (!cell) return;
     selectedDateStr = cell.getAttribute("data-date");
     renderAll();
-    showToast(`已选中 ${formatCNDate(selectedDateStr)}，可在首页记录当日胶囊`);
   });
 
-  // 历史周期列表：排除异常周期 & 删除
+  document.getElementById("calendarDayDrawer").addEventListener("click", e => {
+    const tagBtn = e.target.closest(".drawer-tag-btn[data-tag-id]");
+    if (tagBtn) {
+      toggleTagForDate(selectedDateStr, tagBtn.getAttribute("data-tag-id"));
+      return;
+    }
+    if (e.target.id === "drawerStartPeriodBtn") {
+      const stats = computeCycleStats(appState);
+      if (isDateInLoggedPeriod(selectedDateStr, stats.sortedCycles, stats.avgPeriodLen)) {
+        showToast("这一天已经在经期记录里啦");
+        return;
+      }
+      const dur = Number(appState.settings.defaultPeriodLen) || 5;
+      appState.cycles.push({ id: "c_" + Date.now(), startDate: selectedDateStr, endDate: addDays(selectedDateStr, dur - 1), excluded: false });
+      saveState(`已把 ${formatCNDate(selectedDateStr)} 记为开始日`);
+    }
+  });
+
+  document.getElementById("calendarDayDrawer").addEventListener("input", e => {
+    if (e.target.id === "drawerNoteInput") {
+      if (!appState.logs[selectedDateStr]) appState.logs[selectedDateStr] = { tags: [], note: "" };
+      appState.logs[selectedDateStr].note = e.target.value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    }
+  });
+
+  // 历史周期异常勾选与删除
   document.getElementById("cycleHistoryList").addEventListener("change", e => {
     if (e.target.classList.contains("exclude-cycle-cb")) {
-      const id = e.target.getAttribute("data-cycle-id");
-      const target = appState.cycles.find(c => c.id === id);
+      const target = appState.cycles.find(c => c.id === e.target.getAttribute("data-cycle-id"));
       if (target) {
         target.excluded = e.target.checked;
-        saveState(target.excluded ? "已将该次异常波动排除出均值算法" : "已恢复计入周期均值");
+        saveState(target.excluded ? "已忽略这次波动，不拉偏预测" : "已恢复计入平均");
       }
     }
   });
@@ -972,56 +1149,93 @@ function bindEvents() {
   document.getElementById("cycleHistoryList").addEventListener("click", e => {
     const delBtn = e.target.closest(".delete-cycle-btn");
     if (!delBtn) return;
-    if (appState.cycles.length <= 1) {
-      showToast("请至少保留 1 条基准周期记录");
-      return;
-    }
-    const id = delBtn.getAttribute("data-cycle-id");
-    appState.cycles = appState.cycles.filter(c => c.id !== id);
-    saveState("已删除该条周期记录");
+    if (appState.cycles.length <= 1) return showToast("至少留 1 条记录作为参考哦");
+    appState.cycles = appState.cycles.filter(c => c.id !== delBtn.getAttribute("data-cycle-id"));
+    saveState("已删除这条记录");
   });
 
-  // 复制妇科门诊病历摘要
+  // 工具箱：大事记与小抄基础交互
+  document.getElementById("addEventBtn").addEventListener("click", () => {
+    const name = document.getElementById("eventNameInput").value.trim();
+    const date = document.getElementById("eventDateInput").value;
+    if (!name || !date) return showToast("把事件名字和日期都填上吧");
+    const ev = { id: "ev_" + Date.now(), name, date, checkedItems: [] };
+    appState.events.push(ev);
+    appState.events.sort((a, b) => a.date.localeCompare(b.date));
+    selectedEventId = ev.id;
+    document.getElementById("eventNameInput").value = "";
+    saveState("已放进大事记，日历也标好啦");
+  });
+
+  document.getElementById("savedEventsList").addEventListener("click", e => {
+    const del = e.target.closest(".delete-event-btn");
+    if (del) {
+      e.stopPropagation();
+      appState.events = appState.events.filter(x => x.id !== del.getAttribute("data-event-id"));
+      saveState("已移除这条大事记");
+      return;
+    }
+    const item = e.target.closest(".event-item[data-event-id]");
+    if (item) {
+      selectedEventId = item.getAttribute("data-event-id");
+      renderEventsPanel(computeCycleStats(appState));
+    }
+  });
+
+  document.getElementById("doctorQuestionChips").addEventListener("click", e => {
+    const btn = e.target.closest(".doctor-q-btn");
+    if (!btn) return;
+    const q = btn.getAttribute("data-q");
+    const list = appState.doctorQuestions || [];
+    const idx = list.indexOf(q);
+    if (idx >= 0) list.splice(idx, 1);
+    else list.push(q);
+    appState.doctorQuestions = list;
+    saveState();
+  });
+
   document.getElementById("copyDoctorSummaryBtn").addEventListener("click", () => {
     const stats = computeCycleStats(appState);
     const text = [
-      `【妇科门诊月经史摘要】生成日：${toDateStr(new Date())}`,
-      `• 末次月经首日 (LMP)：${stats.lmpDate}（当前处于周期第 ${stats.cycleDay} 天）`,
-      `• 既往周期范围：${stats.minCycle}~${stats.maxCycle} 天（平均 ${stats.avgCycleLen} 天，波动差值 ${stats.variation} 天）`,
-      `• 平均行经天数：${stats.avgPeriodLen} 天`,
-      `• 近3次来潮首日：${stats.historyRows.slice(0, 3).map(r => r.startDate).join(" / ")}`
+      `【妇科门诊月经史摘要】${toDateStr(new Date())}`,
+      `末次月经首日：${stats.lmpDate}（当前第 ${stats.cycleDay} 天）`,
+      `周期范围：${stats.minCycle}~${stats.maxCycle} 天（均值 ${stats.avgCycleLen} 天）`,
+      `平均行经：${stats.avgPeriodLen} 天`,
+      ...(appState.doctorQuestions.length ? ["想咨询的问题：" + appState.doctorQuestions.join("；")] : [])
     ].join("\n");
     navigator.clipboard?.writeText(text);
-    showToast("🩺 已复制临床病历摘要到剪贴板");
+    showToast("看病摘要已复制");
   });
 
-  // 伴侣卡片语气切换与一键复制
-  document.querySelectorAll("[data-partner-tone]").forEach(btn => {
+  document.querySelectorAll("#receiptTonePills [data-partner-tone]").forEach(btn => {
     btn.addEventListener("click", () => {
       appState.settings.partnerTone = btn.getAttribute("data-partner-tone");
       saveState();
     });
   });
 
-  document.getElementById("copyPartnerCardBtn").addEventListener("click", () => {
-    const stats = computeCycleStats(appState);
-    const s = stats.seasonInfo;
-    const tone = appState.settings.partnerTone || "science";
-    const copyData =
-      tone === "witty" ? s.partnerWitty : tone === "minimal" ? s.partnerMinimal : s.partnerScience;
-    const shareText = `💌【今日身体四季状态卡 · 周期 Day ${stats.cycleDay}】\n${s.badge}\n\n“${copyData.quote}”\n\n${copyData.dos}\n${copyData.donts}`;
-    navigator.clipboard?.writeText(shareText);
-    showToast("💌 已复制伴侣关怀卡，快去微信粘贴发给 TA 吧！");
+  // 我的：人设、皮肤、参数与备份
+  document.querySelectorAll("[data-persona]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      appState.settings.persona = btn.getAttribute("data-persona");
+      lastCompanionOverride = null;
+      saveState(appState.settings.persona === "ceo" ? "霸总已上线" : "温柔搭子已就位");
+    });
   });
 
-  // 重要日程撞期测算
-  document.getElementById("calcEventCollisionBtn").addEventListener("click", () => {
-    const stats = computeCycleStats(appState);
-    renderEventCollisionResult(stats);
-    showToast("🔮 已完成日程身体季节测算");
+  document.querySelectorAll("[data-theme-choice]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      appState.settings.theme = btn.getAttribute("data-theme-choice");
+      saveState("新配色已换上");
+    });
   });
 
-  // 隐私保险箱：JSON 导出、导入与一键焚毁
+  document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+    appState.settings.defaultCycleLen = Math.min(60, Math.max(18, Number(document.getElementById("settingCycleLen").value) || 29));
+    appState.settings.defaultPeriodLen = Math.min(14, Math.max(2, Number(document.getElementById("settingPeriodLen").value) || 5));
+    saveState("周期参考值已更新");
+  });
+
   document.getElementById("exportDataBtn").addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(appState, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1030,7 +1244,7 @@ function bindEvents() {
     a.download = `tidelog-backup-${toDateStr(new Date())}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("📦 本地加密备份 JSON 已下载");
+    showToast("本地备份文件已下载");
   });
 
   const importInput = document.getElementById("importDataInput");
@@ -1042,45 +1256,36 @@ function bindEvents() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result));
-        if (!parsed || !Array.isArray(parsed.cycles) || !parsed.settings) {
-          throw new Error("Invalid schema");
-        }
-        appState = parsed;
-        saveState("✅ 备份数据已成功恢复至本地！");
-      } catch (err) {
-        showToast("❌ 备份文件格式有误，导入失败");
+        if (!parsed || !Array.isArray(parsed.cycles)) throw new Error("bad");
+        appState = normalizeState(parsed);
+        saveState("备份已恢复好啦");
+      } catch {
+        showToast("文件格式不对，导入失败");
       }
     };
     reader.readAsText(file);
   });
 
   document.getElementById("nukeDataBtn").addEventListener("click", () => {
-    if (window.confirm("确定要彻底焚毁当前浏览器中的所有周期、症状和笔记数据吗？此操作不可撤销。")) {
+    if (window.confirm("确定要清空当前设备里的所有记录吗？清空后无法找回。")) {
       localStorage.removeItem(STORAGE_KEY);
       appState = createDefaultState();
       appState.logs = {};
-      saveState("🔥 本地历史痕迹已彻底清空");
+      appState.events = [];
+      saveState("已全部清空");
     }
-  });
-
-  // 保存周期基准参数
-  document.getElementById("saveSettingsBtn").addEventListener("click", () => {
-    const cLen = Math.min(60, Math.max(18, Number(document.getElementById("settingCycleLen").value) || 29));
-    const pLen = Math.min(14, Math.max(2, Number(document.getElementById("settingPeriodLen").value) || 5));
-    appState.settings.defaultCycleLen = cLen;
-    appState.settings.defaultPeriodLen = pLen;
-    saveState("⚙️ 基准周期参数已更新");
   });
 }
 
-// 自检断言（Ponytail rule: assert-based self-check for core non-trivial cycle prediction math）
 function runSelfChecks() {
   const sample = createDefaultState();
   const stats = computeCycleStats(sample);
-  console.assert(stats.avgCycleLen >= 21 && stats.avgCycleLen <= 35, "Cycle average out of bounds");
-  console.assert(stats.nextPredStart <= stats.nextPredCenter && stats.nextPredCenter <= stats.nextPredEnd, "Prediction window inverted");
-  console.assert(getSeasonForDay(1, 5, 14, 28).key === "winter", "Day 1 must be winter");
-  console.assert(getSeasonForDay(14, 5, 14, 28).key === "summer", "Ovulation day must be summer");
+  console.assert(stats.avgCycleLen >= 21 && stats.avgCycleLen <= 35, "avgCycleLen bounds");
+  console.assert(stats.nextPredStart <= stats.nextPredCenter && stats.nextPredCenter <= stats.nextPredEnd, "window order");
+  const w0 = evalWaveY(0.45);
+  console.assert(w0.yEnergy >= 10 && w0.yEnergy <= 82, "wave y bounds");
+  const migrated = normalizeState({ settings: { defaultCycleLen: 30 }, cycles: sample.cycles });
+  console.assert(migrated.settings.persona === "gentle" && migrated.settings.theme === "paper", "migration defaults");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
