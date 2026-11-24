@@ -671,6 +671,96 @@ function buildWavePaths() {
   return { energyLine, energyArea, sensLine };
 }
 
+// 自动发现个人身体小规律（纯本地统计，关联经前 1~4 天与经期第 1~2 天的高频信号）
+function discoverPersonalInsight(state, stats, persona) {
+  const labelMap = {};
+  const intimateIds = new Set();
+  SYMPTOM_GROUPS.forEach(g =>
+    g.items.forEach(it => {
+      labelMap[it.id] = it.label;
+      if (g.intimate) intimateIds.add(it.id);
+    })
+  );
+
+  const preCounts = {};
+  const periodCounts = {};
+  const starts = stats.sortedCycles.map(c => c.startDate);
+
+  Object.entries(state.logs || {}).forEach(([dateStr, log]) => {
+    const tags = (log.tags || []).filter(t => !intimateIds.has(t));
+    if (!tags.length) return;
+    for (const sDate of starts) {
+      const d = diffDays(dateStr, sDate);
+      if (d >= -4 && d <= -1) {
+        tags.forEach(t => { preCounts[t] = (preCounts[t] || 0) + 1; });
+      } else if (d >= 0 && d <= 2) {
+        tags.forEach(t => { periodCounts[t] = (periodCounts[t] || 0) + 1; });
+      }
+    }
+  });
+
+  const topPre = Object.entries(preCounts).sort((a, b) => b[1] - a[1]).slice(0, 2);
+  const topPeriod = Object.entries(periodCounts).sort((a, b) => b[1] - a[1]).slice(0, 2);
+
+  if (topPre.length) {
+    const names = topPre.map(([id]) => `「${labelMap[id] || id}」`).join(" 和 ");
+    return persona === "ceo"
+      ? `我翻了你的记录，发现个小规律：你每次来之前 1~4 天最容易出现 ${names}。下次撞见这信号，立刻把包里备齐，不许打无准备的仗。`
+      : `翻了翻你之前的记录，发现一个专属小规律：你通常在来之前 1~4 天容易出现 ${names}。下次同时遇到它们，记得包里顺手塞一片卫生巾、早点休息哦。`;
+  }
+  if (topPeriod.length) {
+    const names = topPeriod.map(([id]) => `「${labelMap[id] || id}」`).join("、");
+    return persona === "ceo"
+      ? `看你过往记录，刚来前两天最常打卡 ${names}。下次快到日子时，热饮和止痛药提前备到伸手就能拿的地方。`
+      : `从你之前的记录来看，刚来的前两天最常出现 ${names}，下次快到窗口期时提前备好暖贴和止痛药会安心很多。`;
+  }
+  return null;
+}
+
+// 隐私脱敏月度身体切片数据（绝不包含具体日期与私密/用药标签）
+function getMonthlySliceData(state, stats, persona) {
+  const intimateIds = new Set();
+  const labelMap = {};
+  SYMPTOM_GROUPS.forEach(g =>
+    g.items.forEach(it => {
+      labelMap[it.id] = it.label;
+      if (g.intimate) intimateIds.add(it.id);
+    })
+  );
+
+  const safeCounts = {};
+  let logDays = 0;
+  Object.values(state.logs || {}).forEach(log => {
+    if ((log.tags && log.tags.length) || (log.note && log.note.trim())) logDays++;
+    (log.tags || []).forEach(t => {
+      if (!intimateIds.has(t) && !t.startsWith("flow_")) {
+        safeCounts[t] = (safeCounts[t] || 0) + 1;
+      }
+    });
+  });
+
+  const topTags = Object.entries(safeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([id]) => labelMap[id] || id);
+
+  const now = new Date();
+  const monthLabel = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const quote =
+    persona === "ceo"
+      ? "“女人，这世上最该被偏爱的是你自己的身体节奏，下个月也继续按舒服的来。”"
+      : "“不是每天都要满格运转，允许自己跟着潮汐起伏，本身就是很棒的照顾。”";
+
+  return {
+    monthLabel,
+    restDays: stats.avgPeriodLen,
+    logDays,
+    cycleDays: stats.avgCycleLen,
+    topTags: topTags.length ? topTags : ["平静松弛", "好好睡觉"],
+    quote
+  };
+}
+
 // ==================== 全局渲染 ====================
 function renderAll() {
   const stats = computeCycleStats(appState);
@@ -700,10 +790,33 @@ function renderAll() {
   document.getElementById("stealthBtn").classList.toggle("active", stealth);
 
   renderTodayTab(stats, stealth, persona);
+  renderPersonalInsightCard(stats, stealth, persona);
   renderCapsuleLogger(stealth);
   renderCalendarTab(stats, stealth);
   renderToolkitTab(stats, stealth, persona);
   renderMineTab(stealth, persona, theme);
+}
+
+function renderPersonalInsightCard(stats, stealth, persona) {
+  const card = document.getElementById("personalInsightCard");
+  if (!card) return;
+  if (stealth) {
+    card.style.display = "none";
+    return;
+  }
+  const insight = discoverPersonalInsight(appState, stats, persona);
+  if (!insight) {
+    card.style.display = "none";
+    return;
+  }
+  card.style.display = "block";
+  card.innerHTML = `
+    <div class="insight-banner-head">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"/></svg>
+      <span>${persona === "ceo" ? "霸总帮你盯出的身体规律" : "我发现你的一个小规律"}</span>
+    </div>
+    <p>${escapeHtml(insight)}</p>
+  `;
 }
 
 function renderTodayTab(stats, stealth, persona) {
@@ -1053,24 +1166,50 @@ function renderToolkitTab(stats, stealth, persona) {
     <div class="receipt-barcode">|||| ||| || |||| ||| TIDELOG</div>
   `;
 
+  const slice = getMonthlySliceData(appState, stats, persona);
   document.getElementById("monthlySlicePreview").innerHTML = `
     <div class="slice-top">
       <span>TIDELOG 月度身体切片</span>
-      <span>${new Date().getFullYear()}.${String(new Date().getMonth() + 1).padStart(2, "0")}</span>
+      <span>${slice.monthLabel}</span>
     </div>
     <div class="slice-title">这个月，也好好照顾了自己</div>
     <div class="slice-stats">
-      <div class="slice-stat-box"><strong>${stats.avgPeriodLen}天</strong><span>安心休整</span></div>
-      <div class="slice-stat-box"><strong>${Object.keys(appState.logs).length}次</strong><span>手帐记录</span></div>
-      <div class="slice-stat-box"><strong>${stats.avgCycleLen}天</strong><span>身体节奏</span></div>
+      <div class="slice-stat-box"><strong>${slice.restDays}天</strong><span>安心休整</span></div>
+      <div class="slice-stat-box"><strong>${slice.logDays}次</strong><span>手帐记录</span></div>
+      <div class="slice-stat-box"><strong>${slice.cycleDays}天</strong><span>身体节奏</span></div>
     </div>
-    <div class="slice-footer-quote">“不是每天都要满格运转，允许自己跟着潮汐起伏。”</div>
+    <div class="slice-tags">
+      ${slice.topTags.map(t => `<span class="slice-tag"># ${escapeHtml(t)}</span>`).join("")}
+    </div>
+    <div class="slice-footer-quote">${escapeHtml(slice.quote)}</div>
   `;
 
   renderEventsPanel(stats);
   renderDoctorPanel(stats);
   renderReliefTips();
 }
+
+const EVENT_CHECKLISTS = {
+  winter: [
+    "日夜用卫生巾 / 棉条或月经杯（下水必备）",
+    "布洛芬止痛药（随身包放 2 粒备用）",
+    "便携暖宝宝贴 + 保温杯",
+    "一条深色舒适备换下装"
+  ],
+  autumn: [
+    "包里随手塞 2 片护垫/卫生巾防提前来潮",
+    "备点黑巧或小零食稳住低血糖",
+    "提前把当天行程留出 1 小时放空"
+  ],
+  spring: [
+    "状态轻盈，带上好心情和防晒就行",
+    "适合拍照和走长路线，穿双舒服的鞋"
+  ],
+  summer: [
+    "全月状态巅峰，放心安排高光行程",
+    "记得多补水，玩开心也别熬太晚"
+  ]
+};
 
 function renderReliefTips() {
   const tips = [
@@ -1119,13 +1258,24 @@ function renderEventsPanel(stats) {
   if (!cur) return;
   const pred = getFutureDatePrediction(cur.date, stats);
   const s = pred.season;
+  const items = EVENT_CHECKLISTS[s.key] || EVENT_CHECKLISTS.spring;
+  const checkedSet = new Set(cur.checkedItems || []);
+
   document.getElementById("eventCollisionResult").innerHTML = `
     <div class="tip-card highlight">
       <div>
         <h4>${escapeHtml(cur.name)}（${formatCNDate(cur.date)}）</h4>
         <p style="margin-top:4px;">预计处于 <strong>${escapeHtml(s.title)}</strong>（周期约第 ${pred.modDay} 天）。</p>
-        <p style="margin-top:6px;">${s.key === "winter" ? "大概率会撞上经期，建议提前备好卫生巾/棉条、止痛药和暖贴，行程留出休息空隙。" : s.key === "autumn" ? "临近经期，包里顺手塞一片护垫防提前来潮，别把日程排太满。" : "状态很好，基本避开了难受的那几天，放心享受吧！"}</p>
+        <p style="margin-top:6px;">${s.key === "winter" ? "大概率会撞上经期！如果是无法改期的大考或水上活动，可提前 1 个月咨询医生评估安全调经，下面清单帮你提前打包：" : s.key === "autumn" ? "离经期很近啦，提前做好小准备就不慌：" : "完美避开难受的日子，安心冲就行！"}</p>
       </div>
+    </div>
+    <div class="checklist-box" data-checklist-event="${cur.id}">
+      ${items.map(it => `
+        <label class="checklist-item">
+          <input type="checkbox" class="event-check-cb" data-item="${escapeHtml(it)}" ${checkedSet.has(it) ? "checked" : ""} />
+          <span>${escapeHtml(it)}</span>
+        </label>
+      `).join("")}
     </div>
   `;
 }
@@ -1532,6 +1682,63 @@ function bindEvents() {
     showToast("小票文字版已复制，去微信粘贴发给 TA 吧");
   });
 
+  // Canvas 一键保存 PNG（小票 / 月度切片 / 看病小抄）
+  document.getElementById("downloadReceiptBtn").addEventListener("click", () => {
+    exportReceiptPng(computeCycleStats(appState));
+  });
+  document.getElementById("downloadSliceBtn").addEventListener("click", () => {
+    exportMonthlySlicePng(computeCycleStats(appState));
+  });
+  document.getElementById("downloadDoctorPngBtn").addEventListener("click", () => {
+    exportDoctorPng(computeCycleStats(appState));
+  });
+
+  // 打包清单勾选持久化
+  document.getElementById("eventCollisionResult").addEventListener("change", e => {
+    if (!e.target.classList.contains("event-check-cb")) return;
+    const box = e.target.closest("[data-checklist-event]");
+    const ev = (appState.events || []).find(x => x.id === box?.getAttribute("data-checklist-event"));
+    if (!ev) return;
+    const item = e.target.getAttribute("data-item");
+    ev.checkedItems = Array.isArray(ev.checkedItems) ? ev.checkedItems : [];
+    if (e.target.checked && !ev.checkedItems.includes(item)) ev.checkedItems.push(item);
+    else if (!e.target.checked) ev.checkedItems = ev.checkedItems.filter(x => x !== item);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+  });
+
+  // 电子布洛芬：4-7-8 呼吸引导 & 情绪树洞丢进海里
+  document.getElementById("toggleBreathBtn").addEventListener("click", toggleBreathing);
+
+  document.getElementById("tossToSeaBtn").addEventListener("click", () => {
+    const ta = document.getElementById("ventTextarea");
+    const box = document.getElementById("ventPaperBox");
+    const reply = document.getElementById("ventReplyText");
+    if (!ta.value.trim()) return showToast("先写点什么再丢进海里吧");
+    box.classList.add("dissolving");
+    const persona = appState.settings.persona || "gentle";
+    setTimeout(() => {
+      ta.value = "";
+      box.classList.remove("dissolving");
+      reply.textContent = persona === "ceo"
+        ? "碎掉了，沉海底了。谁让你不爽的都翻篇，深吸一口气，咱们不跟他们一般见识。"
+        : "已经跟着潮水飘走啦，不留一点痕迹。心里有没有松快了一点点？";
+      showToast("坏情绪已丢进海里");
+    }, 650);
+  });
+
+  document.getElementById("saveVentToNoteBtn").addEventListener("click", () => {
+    const ta = document.getElementById("ventTextarea");
+    const val = ta.value.trim();
+    if (!val) return showToast("还没写内容呢");
+    const todayStr = toDateStr(new Date());
+    if (!appState.logs[todayStr]) appState.logs[todayStr] = { tags: [], note: "" };
+    appState.logs[todayStr].note = appState.logs[todayStr].note
+      ? `${appState.logs[todayStr].note}\n${val}`
+      : val;
+    ta.value = "";
+    saveState("已悄悄存进今天的手帐里");
+  });
+
   // 我的：人设、皮肤、参数与备份
   document.querySelectorAll("[data-persona]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -1595,6 +1802,389 @@ function bindEvents() {
   });
 }
 
+// ==================== 4-7-8 放松呼吸机 ====================
+let breathTimer = null;
+const BREATH_PHASES = [
+  { cls: "inhale", label: "慢慢吸气", sec: 4 },
+  { cls: "hold", label: "轻轻屏住", sec: 7 },
+  { cls: "exhale", label: "缓缓呼出", sec: 8 }
+];
+
+function toggleBreathing() {
+  const orb = document.getElementById("breathOrb");
+  const phaseEl = document.getElementById("breathPhaseText");
+  const countEl = document.getElementById("breathCountText");
+  const btn = document.getElementById("toggleBreathBtn");
+
+  if (breathTimer) {
+    clearInterval(breathTimer);
+    breathTimer = null;
+    orb.className = "breath-orb";
+    phaseEl.textContent = "准备好了吗";
+    countEl.textContent = "点下面开始";
+    btn.textContent = "开始跟着呼吸";
+    return;
+  }
+
+  let idx = 0;
+  let remain = BREATH_PHASES[0].sec;
+  const applyStep = () => {
+    const cur = BREATH_PHASES[idx];
+    orb.className = `breath-orb ${cur.cls}`;
+    phaseEl.textContent = cur.label;
+    countEl.textContent = `${remain} 秒`;
+  };
+  btn.textContent = "停一下";
+  applyStep();
+  breathTimer = setInterval(() => {
+    remain--;
+    if (remain <= 0) {
+      idx = (idx + 1) % BREATH_PHASES.length;
+      remain = BREATH_PHASES[idx].sec;
+    }
+    applyStep();
+  }, 1000);
+}
+
+// ==================== 零依赖 Canvas 高清晒图/小票/小抄导出 ====================
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+  let line = "";
+  let curY = y;
+  for (const ch of String(text || "")) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, curY);
+      line = ch;
+      curY += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  if (line) {
+    ctx.fillText(line, x, curY);
+    curY += lineHeight;
+  }
+  return curY;
+}
+
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function downloadCanvasPng(canvas, filename) {
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+function exportReceiptPng(stats) {
+  const s = stats.seasonInfo;
+  const tone = appState.settings.partnerTone || "gentle";
+  const rData = RECEIPT_COPY[s.key]?.[tone] || RECEIPT_COPY.winter.gentle;
+
+  const W = 760, H = 1080;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  // 柔和底布
+  ctx.fillStyle = "#EFE8DD";
+  ctx.fillRect(0, 0, W, H);
+
+  // 锯齿便利店小票主体
+  const px = 56, py = 48, pw = W - 112, ph = H - 96;
+  ctx.save();
+  ctx.shadowColor = "rgba(45,38,34,0.14)";
+  ctx.shadowBlur = 32;
+  ctx.shadowOffsetY = 14;
+  ctx.fillStyle = "#FFFDF8";
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  const tooth = 18;
+  for (let x = px; x < px + pw; x += tooth) {
+    ctx.lineTo(x + tooth / 2, py + 9);
+    ctx.lineTo(Math.min(px + pw, x + tooth), py);
+  }
+  ctx.lineTo(px + pw, py + ph);
+  for (let x = px + pw; x > px; x -= tooth) {
+    ctx.lineTo(x - tooth / 2, py + ph - 9);
+    ctx.lineTo(Math.max(px, x - tooth), py + ph);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  const innerX = px + 44;
+  const innerW = pw - 88;
+  ctx.fillStyle = "#26211F";
+  ctx.textAlign = "center";
+  ctx.font = '700 30px "Noto Serif SC", Georgia, serif';
+  ctx.fillText(`TIDELOG · ${rData.title}`, W / 2, py + 76);
+
+  ctx.fillStyle = "#7C726B";
+  ctx.font = '500 20px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText(`${toDateStr(new Date())}  ·  周期第 ${stats.cycleDay} 天  ·  电量 ${s.battery}`, W / 2, py + 114);
+
+  // 虚线分割
+  ctx.setLineDash([7, 7]);
+  ctx.strokeStyle = "rgba(38,33,31,0.22)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(innerX, py + 144);
+  ctx.lineTo(innerX + innerW, py + 144);
+  ctx.stroke();
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#26211F";
+  ctx.font = '600 26px "Noto Serif SC", Georgia, serif';
+  let y = wrapCanvasText(ctx, `“${rData.quote}”`, innerX, py + 204, innerW, 42);
+
+  y += 20;
+  ctx.beginPath();
+  ctx.moveTo(innerX, y);
+  ctx.lineTo(innerX + innerW, y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const rows = [
+    ["投喂推荐", rData.feeding],
+    ["今天宜做", rData.dos],
+    ["避雷提醒", rData.donts]
+  ];
+  y += 46;
+  rows.forEach(([k, v]) => {
+    ctx.fillStyle = "#8B7D74";
+    ctx.font = '700 20px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(k, innerX, y);
+    ctx.fillStyle = "#2B2420";
+    ctx.font = '500 23px "Plus Jakarta Sans", sans-serif';
+    y = wrapCanvasText(ctx, v, innerX, y + 34, innerW, 34) + 22;
+  });
+
+  // 底部条形码装饰
+  const barY = py + ph - 120;
+  ctx.fillStyle = "#2B2420";
+  const pattern = [4, 2, 6, 2, 3, 5, 2, 4, 2, 7, 3, 2, 5, 2, 4, 6, 2, 3, 4, 2, 5, 3, 2, 6, 2, 4];
+  let bx = W / 2 - 150;
+  pattern.forEach((w, i) => {
+    if (i % 2 === 0) ctx.fillRect(bx, barY, w * 2.2, 46);
+    bx += w * 2.6;
+  });
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#8C827B";
+  ctx.font = '500 18px monospace';
+  ctx.fillText("TIDELOG · ONLY STORED ON YOUR DEVICE", W / 2, barY + 76);
+
+  downloadCanvasPng(canvas, `tidelog-receipt-${toDateStr(new Date())}.png`);
+  showToast("小票高清图已保存，快去发给 TA 吧");
+}
+
+function exportMonthlySlicePng(stats) {
+  const persona = appState.settings.persona || "gentle";
+  const slice = getMonthlySliceData(appState, stats, persona);
+  const W = 900, H = 1200; // 小红书标准 3:4
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, "#FBF5EC");
+  grad.addColorStop(0.55, "#F3E6DA");
+  grad.addColorStop(1, "#EAE2EE");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 装饰柔光圆
+  ctx.fillStyle = "rgba(201,106,80,0.08)";
+  ctx.beginPath();
+  ctx.arc(760, 180, 220, 0, Math.PI * 2);
+  ctx.fill();
+
+  const pad = 74;
+  ctx.fillStyle = "#7D7068";
+  ctx.font = '600 24px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText("TIDELOG · 月度身体切片", pad, 112);
+  ctx.textAlign = "right";
+  ctx.fillText(slice.monthLabel, W - pad, 112);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = "#2A2320";
+  ctx.font = '700 54px "Noto Serif SC", Georgia, serif';
+  ctx.fillText("这个月，也好好", pad, 232);
+  ctx.fillText("照顾了自己。", pad, 304);
+
+  // 3 枚数据卡片
+  const cards = [
+    [`${slice.restDays}天`, "安心休整"],
+    [`${slice.logDays}次`, "手帐记录"],
+    [`${slice.cycleDays}天`, "身体节奏"]
+  ];
+  const cardW = (W - pad * 2 - 36) / 3;
+  cards.forEach(([val, lbl], i) => {
+    const cx = pad + i * (cardW + 18);
+    const cy = 386;
+    drawRoundedRect(ctx, cx, cy, cardW, 180, 28);
+    ctx.fillStyle = "rgba(255,253,249,0.82)";
+    ctx.fill();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#2A2320";
+    ctx.font = '700 46px "Noto Serif SC", Georgia, serif';
+    ctx.fillText(val, cx + cardW / 2, cy + 88);
+    ctx.fillStyle = "#736760";
+    ctx.font = '500 22px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(lbl, cx + cardW / 2, cy + 134);
+  });
+
+  // 隐私脱敏情绪标签
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#736760";
+  ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText("本月高频状态（已隐去隐私日期）", pad, 650);
+
+  let tx = pad, ty = 682;
+  ctx.font = '500 24px "Plus Jakarta Sans", sans-serif';
+  slice.topTags.forEach(tag => {
+    const label = `# ${tag}`;
+    const tw = ctx.measureText(label).width + 44;
+    if (tx + tw > W - pad) {
+      tx = pad;
+      ty += 66;
+    }
+    drawRoundedRect(ctx, tx, ty, tw, 50, 25);
+    ctx.fillStyle = "rgba(255,253,249,0.88)";
+    ctx.fill();
+    ctx.fillStyle = "#3C3430";
+    ctx.fillText(label, tx + 22, ty + 33);
+    tx += tw + 14;
+  });
+
+  // 底部诗意寄语
+  ctx.strokeStyle = "rgba(42,35,32,0.12)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(pad, 910);
+  ctx.lineTo(W - pad, 910);
+  ctx.stroke();
+
+  ctx.fillStyle = "#3E3530";
+  ctx.font = '600 30px "Noto Serif SC", Georgia, serif';
+  wrapCanvasText(ctx, slice.quote, pad, 976, W - pad * 2, 48);
+
+  ctx.fillStyle = "#8C7F77";
+  ctx.font = '500 20px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText("潮汐历 TideLog · 纯本地无广身体手帐", pad, H - 64);
+
+  downloadCanvasPng(canvas, `tidelog-monthly-${slice.monthLabel}.png`);
+  showToast("3:4 晒图海报已保存");
+}
+
+function exportDoctorPng(stats) {
+  const W = 900, H = 1220;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "#221E1C";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(36, 36, W - 72, H - 72);
+
+  const pad = 74;
+  ctx.fillStyle = "#1A1817";
+  ctx.font = '700 38px "Noto Serif SC", Georgia, serif';
+  ctx.fillText("妇科门诊月经史摘要", pad, 114);
+  ctx.fillStyle = "#5F5852";
+  ctx.font = '500 21px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText(`生成日期：${toDateStr(new Date())}  ·  当前周期第 ${stats.cycleDay} 天`, pad, 152);
+
+  ctx.strokeStyle = "#1A1817";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(pad, 178);
+  ctx.lineTo(W - pad, 178);
+  ctx.stroke();
+
+  const metrics = [
+    ["末次月经首日 (LMP)", stats.lmpDate, `距今第 ${stats.cycleDay} 天`],
+    ["既往周期范围 / 均值", `${stats.minCycle}~${stats.maxCycle} 天（均 ${stats.avgCycleLen} 天）`, `最大差值 ${stats.variation} 天`],
+    ["平均行经天数", `${stats.avgPeriodLen} 天`, "参考值 3~7 天"],
+    ["记录周期数", `${stats.sortedCycles.length} 次`, "已过滤偶发异常"]
+  ];
+  const mw = (W - pad * 2 - 20) / 2;
+  metrics.forEach(([lbl, val, sub], i) => {
+    const mx = pad + (i % 2) * (mw + 20);
+    const my = 206 + Math.floor(i / 2) * 144;
+    drawRoundedRect(ctx, mx, my, mw, 124, 14);
+    ctx.fillStyle = "#F6F4EF";
+    ctx.fill();
+    ctx.fillStyle = "#C96A50";
+    ctx.fillRect(mx, my + 12, 6, 100);
+    ctx.fillStyle = "#5D5650";
+    ctx.font = '500 19px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(lbl, mx + 22, my + 36);
+    ctx.fillStyle = "#151210";
+    ctx.font = '700 28px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(val, mx + 22, my + 76);
+    ctx.fillStyle = "#6F6862";
+    ctx.font = '500 18px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(sub, mx + 22, my + 106);
+  });
+
+  let y = 532;
+  ctx.fillStyle = "#1A1817";
+  ctx.font = '700 24px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText("近 6 次月经起止明细", pad, y);
+  y += 38;
+  ctx.font = '600 20px "Plus Jakarta Sans", sans-serif';
+  ctx.fillStyle = "#5D5650";
+  ctx.fillText("来潮首日            结束日期（天数）         周期间隔          备注", pad, y);
+  y += 16;
+  ctx.strokeStyle = "#DED9D2";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(pad, y);
+  ctx.lineTo(W - pad, y);
+  ctx.stroke();
+
+  ctx.font = '500 21px "Plus Jakarta Sans", sans-serif';
+  stats.historyRows.slice(0, 6).forEach(r => {
+    y += 44;
+    ctx.fillStyle = "#1C1917";
+    ctx.fillText(r.startDate, pad, y);
+    ctx.fillText(`${r.endDate || "--"} (${r.duration}天)`, pad + 185, y);
+    ctx.fillText(r.cycleLen ? `${r.cycleLen} 天` : `进行中(Day ${stats.cycleDay})`, pad + 425, y);
+    ctx.fillStyle = r.excluded ? "#C96A50" : "#5D5650";
+    ctx.fillText(r.excluded ? "偶发异常" : "正常", pad + 615, y);
+  });
+
+  if ((appState.doctorQuestions || []).length) {
+    y += 66;
+    ctx.fillStyle = "#1A1817";
+    ctx.font = '700 23px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText("本次想咨询医生的问题：", pad, y);
+    y += 36;
+    ctx.font = '500 21px "Plus Jakarta Sans", sans-serif';
+    ctx.fillStyle = "#2A2523";
+    appState.doctorQuestions.forEach(q => {
+      y = wrapCanvasText(ctx, `• ${q}`, pad, y, W - pad * 2, 34) + 6;
+    });
+  }
+
+  downloadCanvasPng(canvas, `tidelog-doctor-card-${toDateStr(new Date())}.png`);
+  showToast("妇科看病小抄高清图已保存");
+}
+
 function runSelfChecks() {
   const sample = createDefaultState();
   const stats = computeCycleStats(sample);
@@ -1604,6 +2194,11 @@ function runSelfChecks() {
   console.assert(w0.yEnergy >= 10 && w0.yEnergy <= 82, "wave y bounds");
   const migrated = normalizeState({ settings: { defaultCycleLen: 30 }, cycles: sample.cycles });
   console.assert(migrated.settings.persona === "gentle" && migrated.settings.theme === "paper", "migration defaults");
+  const insight = discoverPersonalInsight(sample, stats, "gentle");
+  console.assert(Boolean(insight && insight.includes("狂想吃甜食")), "pattern discovery detects pre-period craving");
+  sample.logs[toDateStr(new Date())].tags.push("intimate_protected");
+  const slice = getMonthlySliceData(sample, stats, "gentle");
+  console.assert(!slice.topTags.some(t => t.includes("亲密")), "monthly slice must exclude intimate tags");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
