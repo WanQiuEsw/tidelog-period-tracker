@@ -1083,6 +1083,11 @@ textarea {
   line-height: 1.45;
 }
 
+.paint-hint-bar button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .calendar-card.is-paint-mode .cal-day:not(.empty) {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--season-winter) 32%, transparent);
@@ -1218,9 +1223,11 @@ textarea {
 }
 
 .cal-dots {
+  position: absolute;
+  top: 4px;
+  right: 5px;
   display: flex;
-  gap: 3px;
-  margin-top: 2px;
+  gap: 2.5px;
   height: 5px;
 }
 
