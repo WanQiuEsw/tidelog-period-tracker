@@ -768,12 +768,11 @@ function renderAll() {
   const persona = appState.settings.persona || "gentle";
   const theme = appState.settings.theme || "paper";
 
-  // 主题与季节强调色
+  // 主题与季节强调色（写在 body 上，确保跟随 data-theme="midnight" 解析深色变量）
   document.body.setAttribute("data-theme", theme);
   document.body.classList.toggle("stealth-mode", stealth);
-  const rootStyle = document.documentElement.style;
-  rootStyle.setProperty("--active-season", stats.seasonInfo.colorVar);
-  rootStyle.setProperty("--active-season-soft", stats.seasonInfo.softVar);
+  document.body.style.setProperty("--active-season", stats.seasonInfo.colorVar);
+  document.body.style.setProperty("--active-season-soft", stats.seasonInfo.softVar);
 
   const themeColors = { paper: "#FAF6F0", sage: "#F3F6F2", midnight: "#12151C" };
   document.getElementById("metaThemeColor")?.setAttribute("content", themeColors[theme] || "#FAF6F0");
@@ -849,9 +848,9 @@ function renderTodayTab(stats, stealth, persona) {
     const leftDays = Math.max(0, stats.avgPeriodLen - stats.cycleDay);
     nextHintEl.textContent = leftDays > 0 ? `大概还有 ${leftDays} 天就舒服啦` : "快收尾了，辛苦啦";
   } else if (daysUntilNext > 0) {
-    nextHintEl.textContent = stealth
+    nextHintEl.innerHTML = stealth
       ? `下次小雨约 ${daysUntilNext} 天后`
-      : `离下次大概还有 ${daysUntilNext} 天 · ${formatCNDate(stats.nextPredStart)}前后`;
+      : `离下次大概还有 ${daysUntilNext} 天<br><span style="white-space:nowrap;">${formatCNDate(stats.nextPredStart)} 前后</span>`;
   } else if (daysUntilNext === 0) {
     nextHintEl.textContent = stealth ? "今明两天可能会变天" : "差不多就在这两天，包里记得备一片";
   } else {
@@ -972,9 +971,9 @@ function renderCapsuleLogger(stealth) {
   const todayStr = toDateStr(new Date());
   const isToday = selectedDateStr === todayStr;
   document.getElementById("loggerCardTitle").textContent = stealth ? "今天天气和体感" : "今天感觉怎么样？";
-  document.getElementById("selectedDateDisplay").textContent = isToday
+  document.getElementById("selectedDateDisplay").innerHTML = isToday
     ? "正在记：今天（点完自动保存）"
-    : `正在补记：${formatCNDate(selectedDateStr)}（点完自动保存）`;
+    : `正在补记：${formatCNDate(selectedDateStr)} <button type="button" class="inline-today-link" id="loggerBackTodayBtn">回到今天</button>`;
 
   const hideIntimate = Boolean(appState.settings.hideIntimateTags);
   document.getElementById("toggleIntimateTagsBtn").textContent = hideIntimate ? "显示私密项" : "隐藏私密项";
@@ -1381,7 +1380,9 @@ function switchMainTab(targetId) {
   document.querySelectorAll(".tab-panel").forEach(p => {
     p.classList.toggle("active", p.id === targetId);
   });
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
 }
 
 function switchSubTab(subId) {
@@ -1526,6 +1527,13 @@ function bindEvents() {
   document.getElementById("capsuleGroupsContainer").addEventListener("click", e => {
     const btn = e.target.closest(".capsule-btn[data-tag-id]");
     if (btn) toggleTagForDate(selectedDateStr, btn.getAttribute("data-tag-id"));
+  });
+
+  document.getElementById("selectedDateDisplay").addEventListener("click", e => {
+    if (e.target.id === "loggerBackTodayBtn") {
+      selectedDateStr = toDateStr(new Date());
+      renderAll();
+    }
   });
 
   document.getElementById("toggleIntimateTagsBtn").addEventListener("click", () => {
