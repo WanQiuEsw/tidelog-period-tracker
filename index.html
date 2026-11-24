@@ -57,10 +57,11 @@
           <span class="persona-dot" id="personaDot"></span>
           <span id="personaQuickText">温柔搭子</span>
         </button>
-        <button class="icon-btn" id="stealthBtn" type="button" aria-label="切换防窥天气手帐模式" title="防窥天气手帐：在工位或地铁隐藏所有生理词">
-          <svg id="stealthIconSvg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+        <button class="stealth-pill" id="stealthBtn" type="button" aria-label="切换防窥天气手帐模式" title="防窥天气手帐：在工位或地铁隐藏所有生理词">
+          <svg id="stealthIconSvg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
           </svg>
+          <span id="stealthBtnText">防窥</span>
         </button>
       </div>
     </div>
@@ -69,6 +70,18 @@
   <main class="app-shell">
     <!-- ==================== TAB 1: 今日 ==================== -->
     <section id="tab-today" class="tab-panel active">
+      <!-- 首次体验示例数据提示条（开始记自己的后自动消失） -->
+      <div class="demo-notice" id="demoNoticeBar" style="display:none;">
+        <div class="demo-notice-text">
+          <strong>当前展示的是示例数据</strong>
+          <span>先随便点点逛一逛，准备好了随时清空、记你自己的周期</span>
+        </div>
+        <div class="demo-notice-actions">
+          <button class="btn-primary sm" id="startMyOwnBtn" type="button">记我自己的</button>
+          <button class="chip-action" id="dismissDemoBtn" type="button">先逛逛</button>
+        </div>
+      </div>
+
       <div class="today-grid">
         <!-- 左/上栏：潮汐呼吸球 + 搭子/霸总实时对话 + 主操作 + 互动曲线 -->
         <div class="stack-col">
@@ -109,11 +122,19 @@
 
                 <div class="orb-center">
                   <span class="orb-eyebrow" id="cycleDayLabel">当前周期</span>
-                  <div class="orb-big-num" id="cycleDayNum">第 1 天</div>
+                  <div class="orb-big-num" id="cycleDayNum">还有 10 天</div>
                   <div class="orb-phase-name" id="compassPhaseTitle">合法躺平期</div>
-                  <div class="orb-countdown" id="compassNextHint">离下次大概还有 10 天</div>
+                  <div class="orb-countdown" id="compassNextHint">周期第 1 天 · 预计 12月3日前后</div>
                 </div>
               </div>
+            </div>
+
+            <!-- 一眼看懂的 4 阶段横向进度条 -->
+            <div class="phase-stepper" id="phaseStepper" aria-label="当前所处周期阶段">
+              <div class="phase-step" data-phase="winter"><i></i><span>经期</span></div>
+              <div class="phase-step" data-phase="spring"><i></i><span>回血期</span></div>
+              <div class="phase-step" data-phase="summer"><i></i><span>高光日</span></div>
+              <div class="phase-step" data-phase="autumn"><i></i><span>经前预警</span></div>
             </div>
 
             <!-- 活人感对话气泡（会随症状点击实时变化） -->
@@ -236,6 +257,20 @@
               <button class="icon-btn sm" id="nextMonthBtn" type="button" aria-label="下个月">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
               </button>
+            </div>
+
+            <!-- 快捷切换：直接点日期涂色标/改经期 -->
+            <div class="calendar-mode-bar">
+              <button class="btn-soft sm batch-toggle-btn" id="togglePaintModeBtn" type="button">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                <span id="paintModeBtnText">点选日历标/改经期</span>
+              </button>
+              <button class="chip-action" id="calendarQuickRetroBtn" type="button">+ 按月快速补记</button>
+            </div>
+
+            <div class="paint-hint-bar" id="paintHintBar" style="display:none;">
+              <span>已进入点选模式：<strong>直接点日期即可标记或取消经期</strong>（可翻到上个月，连续日期会自动合并）</span>
+              <button class="btn-primary sm" id="donePaintModeBtn" type="button">点好了</button>
             </div>
 
             <div class="calendar-weekdays">
@@ -606,26 +641,49 @@
     </button>
   </nav>
 
-  <!-- 补记 / 修改周期弹窗 -->
+  <!-- 补记 / 修改历史经期弹窗（支持快捷选天数与连续补记） -->
   <div class="modal-backdrop" id="retroModal" role="dialog" aria-modal="true" aria-labelledby="retroModalTitle">
     <div class="modal-dialog">
       <div class="modal-head">
-        <h3 id="retroModalTitle">补记一次来的日期</h3>
+        <h3 id="retroModalTitle">补记之前的经期</h3>
         <button class="icon-btn sm" id="closeRetroModalBtn" type="button" aria-label="关闭">✕</button>
       </div>
-      <p class="section-sub" style="margin-bottom: 16px;">把前几次来的日期补上，预测会越来越准。</p>
+      <p class="section-sub" id="retroModalSubtitle" style="margin-bottom: 14px;">选开始那一天，再点一下持续了几天就能搞定。</p>
       <div class="settings-form">
-        <label class="field-block">
-          <span>来的第一天（必填）</span>
-          <input type="date" id="retroStartDate" class="input-field" />
+        <div class="field-block">
+          <span>哪一天开始的？</span>
+          <div class="quick-date-pills" id="retroDatePresets">
+            <button type="button" class="capsule-btn sm-pill" data-offset="-1">昨天</button>
+            <button type="button" class="capsule-btn sm-pill" data-offset="-2">前天</button>
+            <button type="button" class="capsule-btn sm-pill" data-offset="-7">一周前</button>
+            <button type="button" class="capsule-btn sm-pill" data-offset="-29">上个月前后</button>
+          </div>
+          <input type="date" id="retroStartDate" class="input-field" style="margin-top:8px;" />
+        </div>
+
+        <div class="field-block">
+          <span>那次一共持续了几天？</span>
+          <div class="duration-pills" id="retroDurationPills">
+            <button type="button" class="capsule-btn" data-dur="3">3天</button>
+            <button type="button" class="capsule-btn" data-dur="4">4天</button>
+            <button type="button" class="capsule-btn selected" data-dur="5">5天</button>
+            <button type="button" class="capsule-btn" data-dur="6">6天</button>
+            <button type="button" class="capsule-btn" data-dur="7">7天</button>
+            <button type="button" class="capsule-btn" data-dur="custom">自选结束日</button>
+          </div>
+          <input type="date" id="retroEndDate" class="input-field" style="margin-top:8px; display:none;" />
+        </div>
+
+        <div class="retro-preview-box" id="retroRangePreview">将记录：--</div>
+
+        <label class="checklist-item" style="margin-top:2px;">
+          <input type="checkbox" id="retroExcludedCb" />
+          <span>这次因为熬夜/压力大不太准（勾选后不拉偏预测）</span>
         </label>
-        <label class="field-block">
-          <span>结束日期（不填就按平时天数算）</span>
-          <input type="date" id="retroEndDate" class="input-field" />
-        </label>
+
         <div class="action-pair" style="margin-top: 6px;">
-          <button class="btn-soft" id="cancelRetroBtn" type="button">先算了</button>
-          <button class="btn-primary" id="confirmRetroBtn" type="button">记好了</button>
+          <button class="btn-soft" id="saveAndPrevRetroBtn" type="button">存完记更早一次</button>
+          <button class="btn-primary" id="confirmRetroBtn" type="button">保存这条记录</button>
         </div>
       </div>
     </div>

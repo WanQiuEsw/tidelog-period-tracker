@@ -471,7 +471,8 @@ function createDefaultState() {
       { id: "ev_demo_1", name: "周末短途看海", date: addDays(todayStr, 12), checkedItems: [] },
       { id: "ev_demo_2", name: "重要考试 / 汇报", date: addDays(todayStr, 25), checkedItems: [] }
     ],
-    doctorQuestions: [DOCTOR_QUESTIONS[0]]
+    doctorQuestions: [DOCTOR_QUESTIONS[0]],
+    isDemoData: true
   };
 }
 
@@ -480,10 +481,11 @@ function normalizeState(raw) {
   if (!raw || !Array.isArray(raw.cycles) || !raw.settings) return base;
   const merged = {
     settings: { ...base.settings, ...raw.settings },
-    cycles: raw.cycles.length ? raw.cycles : base.cycles,
+    cycles: raw.cycles,
     logs: raw.logs && typeof raw.logs === "object" ? raw.logs : {},
     events: Array.isArray(raw.events) ? raw.events : base.events,
-    doctorQuestions: Array.isArray(raw.doctorQuestions) ? raw.doctorQuestions : base.doctorQuestions
+    doctorQuestions: Array.isArray(raw.doctorQuestions) ? raw.doctorQuestions : base.doctorQuestions,
+    isDemoData: typeof raw.isDemoData === "boolean" ? raw.isDemoData : false
   };
   // 兼容旧版 partnerTone 值
   if (!["gentle", "ceo", "witty"].includes(merged.settings.partnerTone)) {
@@ -518,6 +520,83 @@ let calendarViewDate = new Date();
 let selectedEventId = appState.events[0]?.id || null;
 let lastCompanionOverride = null; // 点击胶囊后的即时对话反馈
 let waveHoverRatio = null;
+let isCalendarPaintMode = false;
+let editingCycleId = null;
+let retroSelectedDur = 5;
+
+function findCycleContainingDate(dateStr, cycles, defaultPeriodLen) {
+  for (const c of cycles) {
+    const end = c.endDate || addDays(c.startDate, defaultPeriodLen - 1);
+    if (dateStr >= c.startDate && dateStr <= end) return { ...c, endDate: end };
+  }
+  return null;
+}
+
+// 写入或修改周期并自动合并重叠/相连的经期段，避免产生脏数据
+function upsertCycleMerged(state, { id = null, startDate, endDate, excluded = false }) {
+  const defaultPeriod = Number(state.settings.defaultPeriodLen) || 5;
+  const safeEnd = endDate && endDate >= startDate ? endDate : startDate;
+  const nextList = state.cycles
+    .filter(c => !id || c.id !== id)
+    .map(c => ({ ...c, endDate: c.endDate || addDays(c.startDate, defaultPeriod - 1) }));
+
+  nextList.push({
+    id: id || "c_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+    startDate,
+    endDate: safeEnd,
+    excluded: Boolean(excluded)
+  });
+
+  nextList.sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const merged = [];
+  for (const c of nextList) {
+    const prev = merged[merged.length - 1];
+    if (prev && c.startDate <= addDays(prev.endDate, 1)) {
+      if (c.endDate > prev.endDate) prev.endDate = c.endDate;
+      prev.excluded = Boolean(prev.excluded || c.excluded);
+    } else {
+      merged.push(c);
+    }
+  }
+  state.cycles = merged;
+  state.isDemoData = false;
+}
+
+// 日历单日点选涂色：标上自动连片合并，取消自动裁剪或拆分
+function togglePeriodDay(state, dateStr) {
+  const defaultPeriod = Number(state.settings.defaultPeriodLen) || 5;
+  const normalized = state.cycles
+    .map(c => ({ ...c, endDate: c.endDate || addDays(c.startDate, defaultPeriod - 1) }))
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  const hitIdx = normalized.findIndex(c => dateStr >= c.startDate && dateStr <= c.endDate);
+  if (hitIdx >= 0) {
+    const hit = normalized[hitIdx];
+    normalized.splice(hitIdx, 1);
+    if (hit.startDate !== hit.endDate) {
+      if (dateStr === hit.startDate) {
+        normalized.push({ ...hit, startDate: addDays(dateStr, 1) });
+      } else if (dateStr === hit.endDate) {
+        normalized.push({ ...hit, endDate: addDays(dateStr, -1) });
+      } else {
+        normalized.push({ ...hit, endDate: addDays(dateStr, -1) });
+        normalized.push({
+          id: "c_" + Date.now() + "_s",
+          startDate: addDays(dateStr, 1),
+          endDate: hit.endDate,
+          excluded: hit.excluded
+        });
+      }
+    }
+    state.cycles = normalized.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    state.isDemoData = false;
+    return "removed";
+  }
+
+  state.cycles = normalized;
+  upsertCycleMerged(state, { startDate: dateStr, endDate: dateStr, excluded: false });
+  return "added";
+}
 
 function saveState(toastMsg) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -787,6 +866,11 @@ function renderAll() {
   personaBtn.classList.toggle("is-ceo", persona === "ceo");
   document.getElementById("personaQuickText").textContent = persona === "ceo" ? "霸总模式" : "温柔搭子";
   document.getElementById("stealthBtn").classList.toggle("active", stealth);
+  const stealthText = document.getElementById("stealthBtnText");
+  if (stealthText) stealthText.textContent = stealth ? "已防窥" : "防窥";
+
+  const demoBar = document.getElementById("demoNoticeBar");
+  if (demoBar) demoBar.style.display = appState.isDemoData ? "flex" : "none";
 
   renderTodayTab(stats, stealth, persona);
   renderPersonalInsightCard(stats, stealth, persona);
@@ -834,31 +918,61 @@ function renderTodayTab(stats, stealth, persona) {
 
   const todayStr = toDateStr(new Date());
   const todayInPeriod = isDateInLoggedPeriod(todayStr, stats.sortedCycles, stats.avgPeriodLen);
-  document.getElementById("cycleDayLabel").textContent = stealth
-    ? "本月第几天"
-    : todayInPeriod
-      ? "正在经期"
-      : "当前周期";
-  document.getElementById("cycleDayNum").textContent = `第 ${stats.cycleDay} 天`;
-  document.getElementById("compassPhaseTitle").textContent = stealth ? s.stealthTitle : s.title;
-
   const daysUntilNext = diffDays(stats.nextPredCenter, todayStr);
+  const hasCycles = stats.sortedCycles.length > 0;
+
+  document.getElementById("cycleDayLabel").textContent = !hasCycles
+    ? "还没开始记录"
+    : stealth
+      ? "今日状态"
+      : todayInPeriod
+        ? "正在经期"
+        : daysUntilNext < 0
+          ? "已过预计日"
+          : "距离下次";
+
+  document.getElementById("cycleDayNum").textContent = !hasCycles
+    ? "记一次吧"
+    : todayInPeriod
+      ? (stealth ? `小雨第 ${stats.cycleDay} 天` : `第 ${stats.cycleDay} 天`)
+      : daysUntilNext > 0
+        ? `还有 ${daysUntilNext} 天`
+        : daysUntilNext === 0
+          ? "就在这两天"
+          : `晚了 ${Math.abs(daysUntilNext)} 天`;
+
+  document.getElementById("compassPhaseTitle").textContent = !hasCycles
+    ? "点下面「补记/改日期」录入上一次"
+    : stealth
+      ? s.stealthTitle
+      : s.title;
+
   const nextHintEl = document.getElementById("compassNextHint");
-  if (todayInPeriod) {
+  if (!hasCycles) {
+    nextHintEl.textContent = "录完最近 1~2 次就能自动推算";
+  } else if (todayInPeriod) {
     const leftDays = Math.max(0, stats.avgPeriodLen - stats.cycleDay);
-    nextHintEl.textContent = leftDays > 0 ? `大概还有 ${leftDays} 天就舒服啦` : "快收尾了，辛苦啦";
+    nextHintEl.textContent = leftDays > 0 ? `大概还有 ${leftDays} 天结束` : "快收尾啦，辛苦了";
   } else if (daysUntilNext > 0) {
     nextHintEl.innerHTML = stealth
-      ? `下次小雨约 ${daysUntilNext} 天后`
-      : `离下次大概还有 ${daysUntilNext} 天<br><span style="white-space:nowrap;">${formatCNDate(stats.nextPredStart)} 前后</span>`;
+      ? `周期第 ${stats.cycleDay} 天`
+      : `周期第 ${stats.cycleDay} 天<br><span style="white-space:nowrap;">预计 ${formatCNDate(stats.nextPredStart)} 前后</span>`;
   } else if (daysUntilNext === 0) {
-    nextHintEl.textContent = stealth ? "今明两天可能会变天" : "差不多就在这两天，包里记得备一片";
+    nextHintEl.textContent = stealth ? `周期第 ${stats.cycleDay} 天` : "包里记得顺手备一片";
   } else {
-    const late = Math.abs(daysUntilNext);
-    nextHintEl.textContent = stealth
-      ? `比平时晚了 ${late} 天，别着急`
-      : `晚点了 ${late} 天，先别慌`;
+    nextHintEl.textContent = `周期第 ${stats.cycleDay} 天 · 先别慌`;
   }
+
+  // 高亮 4 阶段一眼看懂进度条
+  const stepNames = stealth
+    ? { winter: "小雨", spring: "晴朗", summer: "大晴", autumn: "多云" }
+    : { winter: "经期", spring: "回血期", summer: "高光日", autumn: "经前预警" };
+  document.querySelectorAll("#phaseStepper .phase-step").forEach(el => {
+    const ph = el.getAttribute("data-phase");
+    el.classList.toggle("active", hasCycles && ph === s.key);
+    const sp = el.querySelector("span");
+    if (sp && stepNames[ph]) sp.textContent = stepNames[ph];
+  });
 
   // 圆环与四季参考弧
   const C = 2 * Math.PI * 98; // 615.75
@@ -1016,12 +1130,23 @@ function renderCalendarTab(stats, stealth) {
   const todayStr = toDateStr(new Date());
   const eventDates = new Set((appState.events || []).map(e => e.date));
 
+  // 点选涂色模式状态栏
+  const calCard = document.querySelector(".calendar-card");
+  calCard?.classList.toggle("is-paint-mode", isCalendarPaintMode);
+  const paintBtn = document.getElementById("togglePaintModeBtn");
+  paintBtn?.classList.toggle("active", isCalendarPaintMode);
+  const paintBtnTxt = document.getElementById("paintModeBtnText");
+  if (paintBtnTxt) paintBtnTxt.textContent = isCalendarPaintMode ? "正在点选经期中…" : "点选日历标/改经期";
+  const paintHint = document.getElementById("paintHintBar");
+  if (paintHint) paintHint.style.display = isCalendarPaintMode ? "flex" : "none";
+
   const cells = [];
   for (let i = 0; i < startWeekday; i++) cells.push(`<div class="cal-day empty"></div>`);
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    const inPeriod = isDateInLoggedPeriod(dateStr, stats.sortedCycles, stats.avgPeriodLen);
+    const cycleHit = findCycleContainingDate(dateStr, stats.sortedCycles, stats.avgPeriodLen);
+    const inPeriod = Boolean(cycleHit);
     const pred = getFutureDatePrediction(dateStr, stats);
     const log = appState.logs[dateStr];
     const hasLog = log && ((log.tags && log.tags.length) || (log.note && log.note.trim()));
@@ -1034,13 +1159,26 @@ function renderCalendarTab(stats, stealth) {
     else if (pred.type === "predicted-period") cls.push("is-predicted-period");
     else if (pred.type === "ovulation") cls.push("is-ovulation");
 
+    // 清晰一眼识别的微型中文角标
+    let subLabel = "";
+    if (inPeriod) {
+      if (cycleHit.startDate === cycleHit.endDate) subLabel = stealth ? "雨" : "经";
+      else if (dateStr === cycleHit.startDate) subLabel = stealth ? "始" : "来";
+      else if (dateStr === cycleHit.endDate) subLabel = stealth ? "晴" : "完";
+      else subLabel = stealth ? "雨" : "经";
+    } else if (dateStr === todayStr) {
+      subLabel = "今";
+    } else if (pred.type === "predicted-period") {
+      subLabel = "预";
+    } else if (pred.type === "ovulation") {
+      subLabel = "高";
+    }
+
     cells.push(`
       <button type="button" class="${cls.join(" ")}" data-date="${dateStr}">
         <span>${d}</span>
-        <span class="cal-dots">
-          ${hasLog ? '<i class="cal-dot"></i>' : ""}
-          ${hasEvent ? '<i class="cal-dot event"></i>' : ""}
-        </span>
+        ${subLabel ? `<span class="cal-sub">${subLabel}</span>` : ""}
+        ${hasLog || hasEvent ? `<span class="cal-dots">${hasLog ? '<i class="cal-dot"></i>' : ""}${hasEvent ? '<i class="cal-dot event"></i>' : ""}</span>` : ""}
       </button>
     `);
   }
@@ -1073,36 +1211,50 @@ function renderCalendarTab(stats, stealth) {
     </div>
   `;
 
-  // 历史列表
-  document.getElementById("cycleHistoryList").innerHTML = stats.historyRows
-    .map(row => `
-      <div class="history-row">
-        <div>
-          <strong>${formatCNDate(row.startDate)} ~ ${formatCNDate(row.endDate)}（${row.duration}天）</strong>
-          <small>${row.cycleLen ? `间隔 ${row.cycleLen} 天` : "本次周期进行中"}${row.excluded ? " · 已忽略偶发波动" : ""}</small>
-        </div>
-        <div class="history-row-ops">
-          <label class="exclude-label">
-            <input type="checkbox" class="exclude-cycle-cb" data-cycle-id="${row.id}" ${row.excluded ? "checked" : ""} />
-            忽略异常
-          </label>
-          <button type="button" class="chip-action delete-cycle-btn" data-cycle-id="${row.id}">删</button>
-        </div>
-      </div>
-    `)
-    .join("");
+  // 历史列表（支持直接点击「修改」调整任何一次历史起止日期）
+  document.getElementById("cycleHistoryList").innerHTML = stats.historyRows.length
+    ? stats.historyRows
+        .map(row => `
+          <div class="history-row">
+            <div>
+              <strong>${formatCNDate(row.startDate)} ~ ${formatCNDate(row.endDate)}（${row.duration}天）</strong>
+              <small>${row.cycleLen ? `间隔 ${row.cycleLen} 天` : "最近一次记录"}${row.excluded ? " · 已忽略偶发波动" : ""}</small>
+            </div>
+            <div class="history-row-ops">
+              <label class="exclude-label">
+                <input type="checkbox" class="exclude-cycle-cb" data-cycle-id="${row.id}" ${row.excluded ? "checked" : ""} />
+                忽略
+              </label>
+              <button type="button" class="chip-action edit-cycle-btn" data-cycle-id="${row.id}">修改</button>
+              <button type="button" class="chip-action delete-cycle-btn" data-cycle-id="${row.id}">删</button>
+            </div>
+          </div>
+        `)
+        .join("")
+    : `<p class="section-sub">还没有记录过经期，点上面的「点选日历标/改经期」或「+ 补记一次」就能快速开始。</p>`;
 }
 
 function renderCalendarDayDrawer(stats, stealth) {
   const drawer = document.getElementById("calendarDayDrawer");
   const dateStr = selectedDateStr;
-  const inPeriod = isDateInLoggedPeriod(dateStr, stats.sortedCycles, stats.avgPeriodLen);
+  const todayStr = toDateStr(new Date());
+  const cycleHit = findCycleContainingDate(dateStr, stats.sortedCycles, stats.avgPeriodLen);
+  const inPeriod = Boolean(cycleHit);
   const pred = getFutureDatePrediction(dateStr, stats);
   const dayLog = appState.logs[dateStr] || { tags: [], note: "" };
   const activeTags = new Set(dayLog.tags || []);
   const dayEvents = (appState.events || []).filter(e => e.date === dateStr);
 
-  // 抽屉放 8 个最高频标签，方便在日历页原地随手点
+  // 检查是否可以作为最近一次已开始经期的结束日（开始后 1~14 天内）
+  const nearbyPrevCycle = !inPeriod
+    ? [...stats.sortedCycles]
+        .reverse()
+        .find(c => {
+          const gap = diffDays(dateStr, c.startDate);
+          return gap >= 1 && gap <= 14;
+        })
+    : null;
+
   const quickIds = ["flow_medium", "flow_heavy", "pain_cramps_mild", "pain_cramps_heavy", "mood_tired", "mood_irritable", "mood_craving", "med_painkiller"];
   const itemMap = {};
   SYMPTOM_GROUPS.forEach(g => g.items.forEach(it => { itemMap[it.id] = it; }));
@@ -1117,7 +1269,7 @@ function renderCalendarDayDrawer(stats, stealth) {
     .join("");
 
   const phaseText = inPeriod
-    ? (stealth ? "记过的小雨日" : "记过的经期")
+    ? `${stealth ? "记过的小雨日" : "记过的经期"}（${formatCNDate(cycleHit.startDate)} ~ ${formatCNDate(cycleHit.endDate)}）`
     : pred.type === "predicted-period"
       ? (stealth ? "预计可能会下雨" : "预计会在这几天来")
       : (stealth ? pred.season.stealthTitle : pred.season.title);
@@ -1126,17 +1278,33 @@ function renderCalendarDayDrawer(stats, stealth) {
     ? `<p class="drawer-phase-sub" style="color:var(--season-spring); margin-top:4px;">大事记：${dayEvents.map(e => escapeHtml(e.name)).join("、")}</p>`
     : "";
 
+  const isFutureDate = dateStr > todayStr;
+  let periodBtnsHtml = "";
+  if (!isFutureDate) {
+    if (inPeriod) {
+      periodBtnsHtml = `
+        <button type="button" class="btn-soft sm" id="drawerEditCycleBtn" data-cycle-id="${cycleHit.id}">修改这次起止</button>
+        ${dateStr !== cycleHit.endDate ? `<button type="button" class="btn-soft sm" id="drawerEndHereBtn" data-cycle-id="${cycleHit.id}">记这天结束</button>` : ""}
+        <button type="button" class="chip-action" id="drawerUnmarkDayBtn">取消这天标记</button>
+      `;
+    } else {
+      periodBtnsHtml = `
+        <button type="button" class="btn-primary sm" id="drawerStartPeriodBtn">记这天来了</button>
+        ${nearbyPrevCycle ? `<button type="button" class="btn-soft sm" id="drawerExtendEndBtn" data-cycle-id="${nearbyPrevCycle.id}">延续到这天结束</button>` : ""}
+        <button type="button" class="chip-action" id="drawerToggleSingleDayBtn">只标这一天</button>
+      `;
+    }
+  }
+
   drawer.innerHTML = `
     <div class="drawer-top">
       <div>
-        <div class="drawer-date-title">${formatCNDate(dateStr)} ${dateStr === toDateStr(new Date()) ? "· 今天" : ""}</div>
+        <div class="drawer-date-title">${formatCNDate(dateStr)} ${dateStr === todayStr ? "· 今天" : ""}</div>
         <div class="drawer-phase-sub">${escapeHtml(phaseText)}</div>
         ${eventBanner}
       </div>
-      <button type="button" class="chip-action" id="drawerStartPeriodBtn">
-        ${inPeriod ? "这天已记经期" : "设为这天开始"}
-      </button>
     </div>
+    ${periodBtnsHtml ? `<div class="drawer-period-actions">${periodBtnsHtml}</div>` : ""}
     <div class="drawer-quick-tags">${quickChipsHtml}</div>
     <textarea id="drawerNoteInput" class="journal-textarea" rows="2" placeholder="给 ${formatCNDate(dateStr)} 留一句手帐备注…">${escapeHtml(dayLog.note || "")}</textarea>
   `;
@@ -1477,7 +1645,7 @@ function bindEvents() {
       }
     } else {
       const dur = Number(appState.settings.defaultPeriodLen) || 5;
-      appState.cycles.push({ id: "c_" + Date.now(), startDate: todayStr, endDate: addDays(todayStr, dur - 1), excluded: false });
+      upsertCycleMerged(appState, { startDate: todayStr, endDate: addDays(todayStr, dur - 1), excluded: false });
       lastCompanionOverride = null;
       saveState(p.startToast);
     }
@@ -1498,30 +1666,139 @@ function bindEvents() {
     updateWaveCursor(Math.min(1, Math.max(0.03, stats.cycleDay / stats.avgCycleLen)), stats, Boolean(appState.settings.camouflageMode));
   });
 
-  // 补记弹窗
+  // 示例数据引导条交互
+  document.getElementById("dismissDemoBtn")?.addEventListener("click", () => {
+    appState.isDemoData = false;
+    saveState("随时可以去日历或「补记/改日期」录入你自己的记录");
+  });
+  document.getElementById("startMyOwnBtn")?.addEventListener("click", () => {
+    appState.cycles = [];
+    appState.logs = {};
+    appState.events = [];
+    appState.isDemoData = false;
+    saveState("已清空示例，先录一下你上一次来的日期吧");
+    openRetroModal({ defaultStart: addDays(toDateStr(new Date()), -14) });
+  });
+
+  // 升级版补记 / 修改历史经期弹窗（快捷日期 + 持续天数胶囊 + 连续补记）
   const retroModal = document.getElementById("retroModal");
-  const openRetro = () => {
-    document.getElementById("retroStartDate").value = selectedDateStr;
-    document.getElementById("retroEndDate").value = addDays(selectedDateStr, (Number(appState.settings.defaultPeriodLen) || 5) - 1);
+  const retroStartInput = document.getElementById("retroStartDate");
+  const retroEndInput = document.getElementById("retroEndDate");
+  const retroExcludedCb = document.getElementById("retroExcludedCb");
+  const retroPreviewEl = document.getElementById("retroRangePreview");
+
+  function syncRetroPreview() {
+    const start = retroStartInput.value;
+    if (!start) {
+      retroPreviewEl.textContent = "先选一个开始日期";
+      return;
+    }
+    let end;
+    if (retroSelectedDur === "custom") {
+      end = retroEndInput.value && retroEndInput.value >= start ? retroEndInput.value : start;
+      retroEndInput.value = end;
+    } else {
+      end = addDays(start, Number(retroSelectedDur) - 1);
+      retroEndInput.value = end;
+    }
+    const days = Math.max(1, diffDays(end, start) + 1);
+    retroPreviewEl.textContent = `将记录：${formatCNDate(start)} ~ ${formatCNDate(end)}（共 ${days} 天）`;
+  }
+
+  function setRetroDuration(dur) {
+    retroSelectedDur = dur;
+    document.querySelectorAll("#retroDurationPills [data-dur]").forEach(btn => {
+      btn.classList.toggle("selected", btn.getAttribute("data-dur") === String(dur));
+    });
+    retroEndInput.style.display = dur === "custom" ? "block" : "none";
+    syncRetroPreview();
+  }
+
+  function openRetroModal({ cycle = null, defaultStart = null } = {}) {
+    const defDur = Number(appState.settings.defaultPeriodLen) || 5;
+    if (cycle) {
+      editingCycleId = cycle.id;
+      document.getElementById("retroModalTitle").textContent = "修改这次经期记录";
+      document.getElementById("retroModalSubtitle").textContent = "调一下开始日期或持续天数，日历和预测会自动重算。";
+      document.getElementById("saveAndPrevRetroBtn").style.display = "none";
+      retroStartInput.value = cycle.startDate;
+      retroEndInput.value = cycle.endDate || addDays(cycle.startDate, defDur - 1);
+      retroExcludedCb.checked = Boolean(cycle.excluded);
+      const dur = Math.max(1, diffDays(retroEndInput.value, cycle.startDate) + 1);
+      setRetroDuration([3, 4, 5, 6, 7].includes(dur) ? dur : "custom");
+    } else {
+      editingCycleId = null;
+      document.getElementById("retroModalTitle").textContent = "补记之前的经期";
+      document.getElementById("retroModalSubtitle").textContent = "选开始那一天，再点一下持续了几天就能搞定；想连录前几个月点左下角。";
+      document.getElementById("saveAndPrevRetroBtn").style.display = "inline-flex";
+      const startVal = defaultStart || (selectedDateStr <= toDateStr(new Date()) ? selectedDateStr : toDateStr(new Date()));
+      retroStartInput.value = startVal;
+      retroExcludedCb.checked = false;
+      setRetroDuration([3, 4, 5, 6, 7].includes(defDur) ? defDur : 5);
+    }
     retroModal.classList.add("open");
+  }
+
+  const closeRetro = () => {
+    retroModal.classList.remove("open");
+    editingCycleId = null;
   };
-  const closeRetro = () => retroModal.classList.remove("open");
-  document.getElementById("openRetroModalBtn").addEventListener("click", openRetro);
-  document.getElementById("calendarAddRetroBtn").addEventListener("click", openRetro);
+
+  function commitRetroForm(continueEarlier) {
+    const start = retroStartInput.value;
+    if (!start) return showToast("先选一下哪天开始的");
+    if (start > toDateStr(new Date())) return showToast("未来的日期还没到哦");
+    const end = retroSelectedDur === "custom"
+      ? (retroEndInput.value && retroEndInput.value >= start ? retroEndInput.value : start)
+      : addDays(start, Number(retroSelectedDur) - 1);
+
+    upsertCycleMerged(appState, {
+      id: editingCycleId,
+      startDate: start,
+      endDate: end,
+      excluded: retroExcludedCb.checked
+    });
+
+    if (continueEarlier) {
+      const avgGap = Number(appState.settings.defaultCycleLen) || 29;
+      const prevStart = addDays(start, -avgGap);
+      editingCycleId = null;
+      retroStartInput.value = prevStart;
+      retroExcludedCb.checked = false;
+      syncRetroPreview();
+      saveState(`已记下 ${formatCNDate(start)}，继续补更早一次吧`);
+    } else {
+      closeRetro();
+      saveState("已保存，日历和预测已经跟着更新啦");
+    }
+  }
+
+  document.getElementById("openRetroModalBtn").addEventListener("click", () => openRetroModal());
+  document.getElementById("calendarAddRetroBtn").addEventListener("click", () => openRetroModal());
+  document.getElementById("calendarQuickRetroBtn").addEventListener("click", () => openRetroModal());
   document.getElementById("closeRetroModalBtn").addEventListener("click", closeRetro);
-  document.getElementById("cancelRetroBtn").addEventListener("click", closeRetro);
   retroModal.addEventListener("click", e => { if (e.target === retroModal) closeRetro(); });
 
-  document.getElementById("confirmRetroBtn").addEventListener("click", () => {
-    const start = document.getElementById("retroStartDate").value;
-    let end = document.getElementById("retroEndDate").value;
-    if (!start) return showToast("先选一下来的第一天");
-    const dur = Number(appState.settings.defaultPeriodLen) || 5;
-    if (!end || end < start) end = addDays(start, dur - 1);
-    appState.cycles.push({ id: "c_" + Date.now(), startDate: start, endDate: end, excluded: false });
-    closeRetro();
-    saveState("补记好了，预测已经跟着更新");
+  document.getElementById("retroDatePresets").addEventListener("click", e => {
+    const btn = e.target.closest("[data-offset]");
+    if (!btn) return;
+    const offset = Number(btn.getAttribute("data-offset"));
+    retroStartInput.value = addDays(toDateStr(new Date()), offset);
+    syncRetroPreview();
   });
+
+  document.getElementById("retroDurationPills").addEventListener("click", e => {
+    const btn = e.target.closest("[data-dur]");
+    if (!btn) return;
+    const val = btn.getAttribute("data-dur");
+    setRetroDuration(val === "custom" ? "custom" : Number(val));
+  });
+
+  retroStartInput.addEventListener("change", syncRetroPreview);
+  retroEndInput.addEventListener("change", syncRetroPreview);
+
+  document.getElementById("confirmRetroBtn").addEventListener("click", () => commitRetroForm(false));
+  document.getElementById("saveAndPrevRetroBtn").addEventListener("click", () => commitRetroForm(true));
 
   // 首页胶囊 & 笔记
   document.getElementById("capsuleGroupsContainer").addEventListener("click", e => {
@@ -1547,7 +1824,7 @@ function bindEvents() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
   });
 
-  // 日历导航与原地抽屉交互
+  // 日历导航、点选涂色模式与原地抽屉交互
   document.getElementById("prevMonthBtn").addEventListener("click", () => {
     calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
     renderAll();
@@ -1562,10 +1839,31 @@ function bindEvents() {
     renderAll();
   });
 
+  document.getElementById("togglePaintModeBtn").addEventListener("click", () => {
+    isCalendarPaintMode = !isCalendarPaintMode;
+    renderAll();
+    if (isCalendarPaintMode) showToast("直接点日期就能标上或取消经期");
+  });
+  document.getElementById("donePaintModeBtn").addEventListener("click", () => {
+    isCalendarPaintMode = false;
+    renderAll();
+    showToast("经期标记已保存好啦");
+  });
+
   document.getElementById("calendarGrid").addEventListener("click", e => {
     const cell = e.target.closest(".cal-day[data-date]");
     if (!cell) return;
-    selectedDateStr = cell.getAttribute("data-date");
+    const clickedDate = cell.getAttribute("data-date");
+    selectedDateStr = clickedDate;
+    if (isCalendarPaintMode) {
+      if (clickedDate > toDateStr(new Date())) {
+        renderAll();
+        return showToast("未来的日期还没到，不能标为已来哦");
+      }
+      const res = togglePeriodDay(appState, clickedDate);
+      saveState(res === "added" ? `已标上 ${formatCNDate(clickedDate)}` : `已取消 ${formatCNDate(clickedDate)}`);
+      return;
+    }
     renderAll();
   });
 
@@ -1575,15 +1873,35 @@ function bindEvents() {
       toggleTagForDate(selectedDateStr, tagBtn.getAttribute("data-tag-id"));
       return;
     }
-    if (e.target.id === "drawerStartPeriodBtn") {
-      const stats = computeCycleStats(appState);
-      if (isDateInLoggedPeriod(selectedDateStr, stats.sortedCycles, stats.avgPeriodLen)) {
-        showToast("这一天已经在经期记录里啦");
-        return;
-      }
+    const id = e.target.id;
+    if (id === "drawerStartPeriodBtn") {
       const dur = Number(appState.settings.defaultPeriodLen) || 5;
-      appState.cycles.push({ id: "c_" + Date.now(), startDate: selectedDateStr, endDate: addDays(selectedDateStr, dur - 1), excluded: false });
-      saveState(`已把 ${formatCNDate(selectedDateStr)} 记为开始日`);
+      upsertCycleMerged(appState, { startDate: selectedDateStr, endDate: addDays(selectedDateStr, dur - 1), excluded: false });
+      saveState(`已记 ${formatCNDate(selectedDateStr)} 开始（默认 ${dur} 天，随时可改）`);
+    } else if (id === "drawerToggleSingleDayBtn") {
+      togglePeriodDay(appState, selectedDateStr);
+      saveState(`已单独标记 ${formatCNDate(selectedDateStr)}`);
+    } else if (id === "drawerExtendEndBtn") {
+      const cid = e.target.getAttribute("data-cycle-id");
+      const target = appState.cycles.find(c => c.id === cid);
+      if (target) {
+        upsertCycleMerged(appState, { id: target.id, startDate: target.startDate, endDate: selectedDateStr, excluded: target.excluded });
+        saveState(`已把那次经期延续到 ${formatCNDate(selectedDateStr)} 结束`);
+      }
+    } else if (id === "drawerEndHereBtn") {
+      const cid = e.target.getAttribute("data-cycle-id");
+      const target = appState.cycles.find(c => c.id === cid);
+      if (target) {
+        upsertCycleMerged(appState, { id: target.id, startDate: target.startDate, endDate: selectedDateStr, excluded: target.excluded });
+        saveState(`已改为 ${formatCNDate(selectedDateStr)} 结束`);
+      }
+    } else if (id === "drawerUnmarkDayBtn") {
+      togglePeriodDay(appState, selectedDateStr);
+      saveState(`已取消 ${formatCNDate(selectedDateStr)} 的经期标记`);
+    } else if (id === "drawerEditCycleBtn") {
+      const cid = e.target.getAttribute("data-cycle-id");
+      const target = appState.cycles.find(c => c.id === cid);
+      if (target) openRetroModal({ cycle: target });
     }
   });
 
@@ -1595,7 +1913,7 @@ function bindEvents() {
     }
   });
 
-  // 历史周期异常勾选与删除
+  // 历史周期：忽略异常、修改与删除
   document.getElementById("cycleHistoryList").addEventListener("change", e => {
     if (e.target.classList.contains("exclude-cycle-cb")) {
       const target = appState.cycles.find(c => c.id === e.target.getAttribute("data-cycle-id"));
@@ -1607,10 +1925,16 @@ function bindEvents() {
   });
 
   document.getElementById("cycleHistoryList").addEventListener("click", e => {
+    const editBtn = e.target.closest(".edit-cycle-btn");
+    if (editBtn) {
+      const target = appState.cycles.find(c => c.id === editBtn.getAttribute("data-cycle-id"));
+      if (target) openRetroModal({ cycle: target });
+      return;
+    }
     const delBtn = e.target.closest(".delete-cycle-btn");
     if (!delBtn) return;
-    if (appState.cycles.length <= 1) return showToast("至少留 1 条记录作为参考哦");
     appState.cycles = appState.cycles.filter(c => c.id !== delBtn.getAttribute("data-cycle-id"));
+    appState.isDemoData = false;
     saveState("已删除这条记录");
   });
 
@@ -2207,6 +2531,17 @@ function runSelfChecks() {
   sample.logs[toDateStr(new Date())].tags.push("intimate_protected");
   const slice = getMonthlySliceData(sample, stats, "gentle");
   console.assert(!slice.topTags.some(t => t.includes("亲密")), "monthly slice must exclude intimate tags");
+
+  // 自检：单日点选涂色合并/拆分与重叠周期合并
+  const testState = { settings: { defaultPeriodLen: 5 }, cycles: [], logs: {}, isDemoData: true };
+  togglePeriodDay(testState, "2026-10-01");
+  togglePeriodDay(testState, "2026-10-02");
+  togglePeriodDay(testState, "2026-10-03");
+  console.assert(testState.cycles.length === 1 && testState.cycles[0].startDate === "2026-10-01" && testState.cycles[0].endDate === "2026-10-03", "adjacent paint days must merge");
+  togglePeriodDay(testState, "2026-10-02");
+  console.assert(testState.cycles.length === 2, "unmarking middle day must split span cleanly");
+  upsertCycleMerged(testState, { startDate: "2026-10-01", endDate: "2026-10-05", excluded: false });
+  console.assert(testState.cycles.length === 1 && testState.cycles[0].endDate === "2026-10-05", "overlapping upsert must merge cleanly");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
