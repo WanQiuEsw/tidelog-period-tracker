@@ -105,7 +105,7 @@ const DOCTOR_QUESTIONS = [
   "有重要考试/旅行撞期，可以怎么安全调整？"
 ];
 
-// 阶段视觉元数据 + 双人设（温柔手帐搭子 / 霸总模式）活人感语料引擎
+// 阶段视觉元数据 + 温柔体贴手帐搭子语料引擎
 const SEASON_META = {
   winter: {
     key: "winter",
@@ -153,180 +153,79 @@ const SEASON_META = {
   }
 };
 
-const PERSONA_COPY = {
-  gentle: {
-    name: "手帐搭子",
-    avatar: "搭",
-    defaultTag: "今日悄悄话",
-    reactTag: "接住你啦",
-    hugTitle: "给你兜底的一句话",
-    lateHint: d => `它晚点了 ${d} 天，先别慌呀，最近是不是太累或熬夜了？身体偶尔会踩一下刹车。`,
-    startToast: "记好啦，这几天什么都别硬撑，慢慢来。",
-    endToast: "好耶，这趟顺利度过啦，准备慢慢回血！",
-    seasons: {
-      winter: {
-        greeting: "今天电量本来就低，只想发呆、不想回消息都特别正常。把暖贴和热饮放手边，允许自己当一天咸鱼。",
-        work: "不用逼自己冲刺，挑几件轻松的收尾活做完就行，难啃的事可以留到下周。",
-        sport: "暂停蹦跳和卷腹，散散步、伸个懒腰，或者早点钻进被窝最舒服。",
-        hug: "现在身体正在悄悄换新，反应变慢一点不是偷懒，是身体在温柔地喊你慢下来。"
-      },
-      spring: {
-        greeting: "最难熬的几天翻篇啦！是不是觉得脑子轻快了不少？趁这股顺风去做件自己一直想做的小事吧。",
-        work: "好奇心和专注力都在回来，开新坑、整理计划、约想见的朋友都很合适。",
-        sport: "体力和恢复力都在悄悄涨回来，慢跑、普拉提、快走都能安排得挺舒服。",
-        hug: "水肿在消，气色也在变亮。不用赶进度，顺着这几天的好状态轻盈地往前走就好。"
-      },
-      summer: {
-        greeting: "这几天是你整个月里底气最足的高光时刻，气色和表达欲都在线，大胆去发光吧。",
-        work: "重要的汇报、面试、谈条件或约会放这几天超加分，你说话会比平时更有感染力。",
-        sport: "状态满格，喜欢流汗的话可以小冲一下，记得多补水、也别把日程塞得太满。",
-        hug: "如果偶尔觉得单侧小腹微微发闷，大多是排卵的小信号，放宽心，身体在好好工作呢。"
-      },
-      autumn: {
-        greeting: "快到日子啦，这两天觉得烦、想吃甜食、看啥都不顺眼，真的不是你矫情，是激素在退潮。",
-        work: "对噪音和细节更敏感，适合戴上耳机安安静静收尾，少管闲事、少做冲动决定。",
-        sport: "比平时更容易累和喘，把高强度换成拉伸或散步就好，绝不要责怪自己体力下降。",
-        hug: "今天如果突然很委屈或者只想吃碳水，请把锅大大方方扣给激素。早点睡，明天会松快很多。"
-      }
-    }
-  },
-  ceo: {
-    name: "霸总管家",
-    avatar: "总",
-    defaultTag: "今日批示",
-    reactTag: "霸总已接管",
-    hugTitle: "霸总今日批示",
-    lateHint: d => `晚了 ${d} 天而已，不许自己瞎琢磨。最近是不是又熬夜了？今晚十一点前乖乖睡觉，我盯着。`,
-    startToast: "收到了。这几天准你合法躺平，不许硬扛。",
-    endToast: "渡劫结束，大小姐准备满血回归。",
-    seasons: {
-      winter: {
-        greeting: "女人，今天电量就剩 20% 了还想硬撑？准你提前躺平。热饮、暖贴和止痛药全部配齐，天塌下来今天也改天再说。",
-        work: "不急的破事全部往后排，今天只准处理三件以内的小事，谁催你我替你挡回去。",
-        sport: "高强度运动全部叫停！今天就允许散步和躺平，谁让你去卷腹的？",
-        hug: "记住，你不是脆弱，是身体在每月升级系统。这几天别讲效率，舒服才是最高指令。"
-      },
-      spring: {
-        greeting: "渡劫完毕，状态回来了？不错，这几天气色和脑子都在线，想买什么、想见谁尽管去，别委屈自己。",
-        work: "脑子这么清楚，正好拿来推进你真正想做的事，顺手把之前欠的漂亮仗打回来。",
-        sport: "体能涨回来了，想跑想练尽管上，但别忘了热身，伤着自己我可不批。",
-        hug: "这几天的好状态是你应得的，大方享受，别老想着讨好别人。"
-      },
-      summer: {
-        greeting: "全月高光期到了，今天的你气场两米八。重要谈判、面试、拍照约会统统安排上，全场你最亮眼。",
-        work: "有底气的时候就要往前站，该要的功劳和条件今天直接提，气势稳赢。",
-        sport: "电量满格，想突破记录就趁这两天，练完记得补蛋白和温水。",
-        hug: "顺便提醒一句：如果不打算备孕，这几天安全措施必须 100% 到位，听见没有？"
-      },
-      autumn: {
-        greeting: "提前给你提个醒：快来了。这两天看谁不顺眼直接拉黑，想吃甜食立刻去买。错的不是你，是激素，听懂了吗？",
-        work: "把废话多的人都屏蔽掉，戴上降噪耳机专心收尾，重要决定等过几天再拍板。",
-        sport: "这两天容易累是正常现象，别跟跑步机较劲，去做个拉伸泡泡脚，早点休息。",
-        hug: "谁要是敢在这几天跟你讲大道理，直接把我的生存小票甩他脸上。今晚十点半前必须上床。"
-      }
+const COMPANION_COPY = {
+  name: "手帐搭子",
+  avatar: "搭",
+  defaultTag: "今日悄悄话",
+  reactTag: "接住你啦",
+  hugTitle: "给你兜底的一句话",
+  lateHint: d => `它晚点了 ${d} 天，先别慌呀，最近是不是太累或熬夜了？身体偶尔会踩一下刹车。`,
+  startToast: "记好啦，这几天什么都别硬撑，慢慢来。",
+  endToast: "好耶，这趟顺利度过啦，准备慢慢回血！",
+  seasons: {
+    winter: {
+      greeting: "今天电量本来就低，只想发呆、不想回消息都特别正常。把暖贴和热饮放手边，允许自己当一天咸鱼。",
+      work: "不用逼自己冲刺，挑几件轻松的收尾活做完就行，难啃的事可以留到下周。",
+      sport: "暂停蹦跳和卷腹，散散步、伸个懒腰，或者早点钻进被窝最舒服。",
+      hug: "现在身体正在悄悄换新，反应变慢一点不是偷懒，是身体在温柔地喊你慢下来。"
+    },
+    spring: {
+      greeting: "最难熬的几天翻篇啦！是不是觉得脑子轻快了不少？趁这股顺风去做件自己一直想做的小事吧。",
+      work: "好奇心和专注力都在回来，开新坑、整理计划、约想见的朋友都很合适。",
+      sport: "体力和恢复力都在悄悄涨回来，慢跑、普拉提、快走都能安排得挺舒服。",
+      hug: "水肿在消，气色也在变亮。不用赶进度，顺着这几天的好状态轻盈地往前走就好。"
+    },
+    summer: {
+      greeting: "这几天是你整个月里底气最足的高光时刻，气色和表达欲都在线，大胆去发光吧。",
+      work: "重要的汇报、面试、谈条件或约会放这几天超加分，你说话会比平时更有感染力。",
+      sport: "状态满格，喜欢流汗的话可以小冲一下，记得多补水、也别把日程塞得太满。",
+      hug: "如果偶尔觉得单侧小腹微微发闷，大多是排卵的小信号，放宽心，身体在好好工作呢。"
+    },
+    autumn: {
+      greeting: "快到日子啦，这两天觉得烦、想吃甜食、看啥都不顺眼，真的不是你矫情，是激素在退潮。",
+      work: "对噪音和细节更敏感，适合戴上耳机安安静静收尾，少管闲事、少做冲动决定。",
+      sport: "比平时更容易累和喘，把高强度换成拉伸或散步就好，绝不要责怪自己体力下降。",
+      hug: "今天如果突然很委屈或者只想吃碳水，请把锅大大方方扣给激素。早点睡，明天会松快很多。"
     }
   }
 };
 
-// 点胶囊后的活人感即时回应（多条轮换，不重样）
+// 点胶囊后的温柔体贴即时回应（多条轮换，不重样）
 const SYMPTOM_REPLIES = {
-  pain_cramps_heavy: {
-    gentle: [
-      "抱抱你，痛到难受千万别硬扛，布洛芬配温水、暖宝宝贴好，今天什么都不做也没关系。",
-      "辛苦了，小腹发紧的时候可以蜷着侧躺一会儿，或者点上面「有点难受」跟着缓口气。"
-    ],
-    ceo: [
-      "痛成这样还拿着手机？立刻放下！暖贴贴好、止痛药按时吃，今天所有待办全部作废。",
-      "女人，不许硬扛痛经，去泡杯热的躺被窝里，剩下的事明天再说。"
-    ]
-  },
-  pain_cramps_mild: {
-    gentle: [
-      "小腹坠坠的时候最磨人了，把脚踝和肚子捂暖一点，少喝冰的会舒服不少。",
-      "收到信号啦，今天走路慢一点、别久站，晚上回家泡个热水脚吧。"
-    ],
-    ceo: [
-      "有点发坠就老实坐着，冰美式今天没收，换成热红豆汤或者温开水。",
-      "别不当回事，暖宝宝现在就贴上，防患于未然懂不懂？"
-    ]
-  },
-  body_backache: {
-    gentle: ["腰酸真的太消耗人了，找个靠垫垫在后腰，隔着衣服贴片暖贴在腰眼超管用。"],
-    ceo: ["腰酸就别死坐着了，靠垫垫好，起身晃两分钟，今晚必须早点躺平。"]
-  },
-  body_breast: {
-    gentle: ["胸胀敏感的时候，回家第一件事就是换上最松软的无钢圈内衣，给身体松松绑。"],
-    ceo: ["敏感期别穿勒人的衣服，怎么舒服怎么来，谁爱看谁看，你舒服最重要。"]
-  },
-  body_headache: {
-    gentle: ["头胀的时候屏幕亮度调低一点，闭眼深呼吸一分钟，喝口温水慢慢缓一缓。"],
-    ceo: ["头都痛了还盯着屏幕干嘛？把亮度调暗，闭眼歇五分钟，这是命令。"]
-  },
-  body_acne: {
-    gentle: ["下巴冒痘大多是周期前的小波动，千万别手痒去挤，早睡两天它自己会乖乖消下去。"],
-    ceo: ["冒颗痘而已，丝毫不影响你的美貌，但手给我老实点，不许抠！"]
-  },
-  body_bloating: {
-    gentle: ["这几天身体会多存一点水，体重涨一两斤都是假象！明天少吃点重盐，过两天秒消。"],
-    ceo: ["水肿涨的那两斤不算数，体重秤今天直接打入冷宫，不准上称给自己添堵。"]
-  },
-  body_insomnia: {
-    gentle: ["没睡好会放大所有疲惫，今天中午哪怕趴十分钟闭闭眼，也是在给大脑充电。"],
-    ceo: ["昨晚没睡好？今天午休必须补二十分钟，晚上手机放远点，不准再刷到半夜。"]
-  },
-  mood_tired: {
-    gentle: ["电量只剩 20% 啦，开启省电模式吧！今天能点外卖就不做饭，能躺着绝不坐着。"],
-    ceo: ["电量都标红了还撑什么？立刻切省电模式，外卖点热的，家务谁爱干谁干。"]
-  },
-  mood_irritable: {
-    gentle: [
-      "烦躁是身体在拉警报呢，不用逼自己当情绪稳定的大人，今天戴上耳机离吵闹远一点。",
-      "想发火很正常，把想骂的话丢进工具箱的「情绪树洞」冲进海里，别憋着自己。"
-    ],
-    ceo: [
-      "谁惹你生气了？不用讲道理，这几天你脾气大天经地义。不想理的人直接冷处理。",
-      "烦了就烦了，不用给任何人好脸色。工具箱里给你备了情绪树洞，去骂两句解解气。"
-    ]
-  },
-  mood_sad: {
-    gentle: [
-      "想哭就哭一会儿吧，眼泪能帮身体把多余的压力排出去。你已经很努力了，今天我站在你这边。",
-      "委屈的时候别急着振作，抱抱自己，点一杯热的甜饮，天黑了就早点钻被窝。"
-    ],
-    ceo: [
-      "怎么突然委屈上了？过来，今天不准偷偷掉眼泪。不是你太敏感，是激素在欺负人。",
-      "谁敢让你委屈？算了，激素惹的祸也算我账上。今晚早点睡，明天又是大小姐。"
-    ]
-  },
-  mood_craving: {
-    gentle: [
-      "不是你嘴馋，是激素在提醒你补点快乐因子。去买杯热饮或小蛋糕吧，今天免责！",
-      "想吃碳水就大大方方吃，温热的红豆汤、烤红薯或热奶茶，开心比热量表重要。"
-    ],
-    ceo: [
-      "想吃甜的就立刻去买，别看配料表和热量表。这几天吃进去的全算在激素账上！",
-      "批准碳水自由！去买你最想吃的那家甜品，不准犹豫。"
-    ]
-  },
-  mood_focus: {
-    gentle: ["脑子超清晰的一天！趁灵感在线把最想搞定的事一鼓作气拿下，晚上记得犒劳自己。"],
-    ceo: ["脑子这么好使，今天谁也拦不住你。干完漂亮活记得准点收工，别透支。"]
-  },
-  mood_calm: {
-    gentle: ["平静松弛的普通一天，其实最珍贵啦。祝你今天顺顺当当，微风正好。"],
-    ceo: ["状态稳得很，继续保持这股从容劲儿，今天诸事皆宜。"]
-  },
-  med_painkiller: {
-    gentle: ["按时吃止痛药是对自己负责，别有心理负担。配温水，等药效上来好好歇一会儿。"],
-    ceo: ["乖，难受就该吃药，硬扛才最傻。喝口温水靠着，等会儿就舒服了。"]
-  },
-  med_iron: {
-    gentle: ["暖暖的舒服多啦，记得隔着衣服贴防低温烫伤，手边再放杯温水。"],
-    ceo: ["暖贴备上了还算听话，别直接贴皮肤，小心烫着。"]
-  }
+  pain_cramps_heavy: [
+    "抱抱你，痛到难受千万别硬扛，布洛芬配温水、暖宝宝贴好，今天什么都不做也没关系。",
+    "辛苦了，小腹发紧的时候可以蜷着侧躺一会儿，或者点上面「有点难受」跟着缓口气。"
+  ],
+  pain_cramps_mild: [
+    "小腹坠坠的时候最磨人了，把脚踝和肚子捂暖一点，少喝冰的会舒服不少。",
+    "收到信号啦，今天走路慢一点、别久站，晚上回家泡个热水脚吧。"
+  ],
+  body_backache: ["腰酸真的太消耗人了，找个靠垫垫在后腰，隔着衣服贴片暖贴在腰眼超管用。"],
+  body_breast: ["胸胀敏感的时候，回家第一件事就是换上最松软的无钢圈内衣，给身体松松绑。"],
+  body_headache: ["头胀的时候屏幕亮度调低一点，闭眼深呼吸一分钟，喝口温水慢慢缓一缓。"],
+  body_acne: ["下巴冒痘大多是周期前的小波动，千万别手痒去挤，早睡两天它自己会乖乖消下去。"],
+  body_bloating: ["这几天身体会多存一点水，体重涨一两斤都是假象！明天少吃点重盐，过两天秒消。"],
+  body_insomnia: ["没睡好会放大所有疲惫，今天中午哪怕趴十分钟闭闭眼，也是在给大脑充电。"],
+  mood_tired: ["电量只剩 20% 啦，开启省电模式吧！今天能点外卖就不做饭，能躺着绝不坐着。"],
+  mood_irritable: [
+    "烦躁是身体在拉警报呢，不用逼自己当情绪稳定的大人，今天戴上耳机离吵闹远一点。",
+    "想发火很正常，把想骂的话丢进工具箱的「情绪树洞」冲进海里，别憋着自己。"
+  ],
+  mood_sad: [
+    "想哭就哭一会儿吧，眼泪能帮身体把多余的压力排出去。你已经很努力了，今天我站在你这边。",
+    "委屈的时候别急着振作，抱抱自己，点一杯热的甜饮，天黑了就早点钻被窝。"
+  ],
+  mood_craving: [
+    "不是你嘴馋，是激素在提醒你补点快乐因子。去买杯热饮或小蛋糕吧，今天免责！",
+    "想吃碳水就大大方方吃，温热的红豆汤、烤红薯或热奶茶，开心比热量表重要。"
+  ],
+  mood_focus: ["脑子超清晰的一天！趁灵感在线把最想搞定的事一鼓作气拿下，晚上记得犒劳自己。"],
+  mood_calm: ["平静松弛的普通一天，其实最珍贵啦。祝你今天顺顺当当，微风正好。"],
+  med_painkiller: ["按时吃止痛药是对自己负责，别有心理负担。配温水，等药效上来好好歇一会儿。"],
+  med_iron: ["暖暖的舒服多啦，记得隔着衣服贴防低温烫伤，手边再放杯温水。"]
 };
 
-// 今日生存小票 3 种语气文案（温柔搭子风 / 霸总下令风 / 发疯梗王风）
+// 今日生存小票 2 种温暖语气（温柔体贴风 / 轻松俏皮风）
 const RECEIPT_COPY = {
   winter: {
     gentle: {
@@ -336,19 +235,12 @@ const RECEIPT_COPY = {
       dos: "顺手接管洗碗和跑腿、准备暖水袋、安安静静抱一抱",
       donts: "别敷衍说“多喝热水”、别催赶时间、别在这几天争论复杂问题"
     },
-    ceo: {
-      title: "霸总最高指令 · 休养日",
-      quote: "通知：此人今日护甲归零、电量告急，本人已批准她全天合法躺平，请配合执行。",
-      feeding: "热的甜饮、温补热汤、她点名想吃的任何热食",
-      dos: "主动包揽杂活、提供人肉暖手宝、无条件顺毛",
-      donts: "严禁说教、严禁问“怎么又累了”、严禁安排高体力暴走"
-    },
     witty: {
-      title: "赛博渡劫小票 · 掉血期",
-      quote: "一级警报！正在经历每月一次的物理掉血，当前痛感放大 200%，闲人免惹。",
-      feeding: "热奶茶、布洛芬、热腾腾外卖、电子布洛芬搞笑视频",
-      dos: "默默递上暖贴和热饮、负责拿快递和洗碗、夸她今天也很可爱",
-      donts: "严禁讲大道理、严禁惹毛、严禁建议“去跑两圈就好了”"
+      title: "暖心渡劫小票 · 掉血期",
+      quote: "温馨播报：正在经历每月一次的物理掉血，今天体力值偏低，急需温柔投喂和抱抱。",
+      feeding: "热奶茶、布洛芬、热腾腾外卖、搞笑下饭视频",
+      dos: "默默递上暖贴和热饮、顺手拿快递和洗碗、夸她今天也很可爱",
+      donts: "别讲大道理、别惹毛、别建议“去跑两圈就好了”"
     }
   },
   spring: {
@@ -359,19 +251,12 @@ const RECEIPT_COPY = {
       dos: "约她散步拍照、聊聊周末小计划、认真听她的新想法",
       donts: "别扫兴泼冷水，这几天是她最有干劲的时候"
     },
-    ceo: {
-      title: "霸总出行通知 · 回春期",
-      quote: "大小姐已满血复活，智商、颜值与好脾气重新占领高地，速速安排行程。",
-      feeding: "好吃的漂亮饭、心仪已久的小甜品、鲜花一支",
-      dos: "带她出门晒太阳、认真拍照不敷衍、支持她的每个决定",
-      donts: "不许宅着发霉、不许敷衍回消息"
-    },
     witty: {
-      title: "复活节小票 · 满血中",
-      quote: "渡劫成功！本人已从咸鱼形态切换回人类形态，现限时开放约饭名额。",
-      feeding: "火锅、烧烤、冰美式（终于解禁了！）",
+      title: "满血回春小票 · 复活中",
+      quote: "渡劫成功！已从咸鱼形态切换回元气模式，现限时开放约饭散步名额。",
+      feeding: "火锅、小甜品、喜欢喝的咖啡终于可以安排啦",
       dos: "约逛街、看电影、一起干点新鲜好玩的事",
-      donts: "别浪费我这几天难得的好脾气"
+      donts: "别浪费这几天难得的好心情呀"
     }
   },
   summer: {
@@ -382,51 +267,35 @@ const RECEIPT_COPY = {
       dos: "真诚夸赞她的状态、安排约会或深度聊天、如非备孕务必做好保护",
       donts: "别敷衍她的分享欲，也别在安全措施上掉链子"
     },
-    ceo: {
-      title: "霸总高光令 · 满格日",
-      quote: "全月气场巅峰时刻，今日份赞美和约会请按最高规格安排，不许敷衍。",
-      feeding: "高颜值餐厅、微醺小酒（看心情）、精致甜点",
-      dos: "大方夸她好看、认真安排约会、安全措施 100% 到位",
-      donts: "禁止敷衍、禁止走神、禁止忘了安全措施"
-    },
     witty: {
-      title: "限时福利小票 · 高光期",
-      quote: "全月看谁都顺眼的限时黄金窗口！错过这几天可就要进入秋日炸毛结界了。",
+      title: "限时闪耀小票 · 高光期",
+      quote: "全月精力与气场最在线的黄金几天！适合安排浪漫约会和拍美美的照片。",
       feeding: "漂亮饭 + 饭后小甜水",
-      dos: "疯狂夸夸、赶紧提想一起玩的事、安全措施拉满",
-      donts: "别不识抬举，且行且珍惜"
+      dos: "真诚夸夸、一起去好玩的地方、安全措施记牢",
+      donts: "别敷衍，也别忘了做好防护哦"
     }
   },
   autumn: {
     gentle: {
-      title: "温柔预警清单 · 经前敏感期",
+      title: "温柔预警清单 · 经前黄体期",
       quote: "离大姨妈很近啦，这几天她容易累、想吃甜食、情绪也更敏感，需要多一点偏爱。",
       feeding: "热可可、小蛋糕、烤红薯、一切能带来安全感的碳水",
       dos: "先拥抱再说话、给她独处和早睡的空间、备好小零食",
       donts: "千万别把情绪波动说成“无理取闹”、别挑起敏感争吵"
     },
-    ceo: {
-      title: "霸总戒严令 · 敏感结界",
-      quote: "警告：已进入暴风雨前夕！快乐激素正在滑坡，此阶段我方拥有无限免责权。",
-      feeding: "高甜小蛋糕、热奶茶、立刻送达的贴心投喂",
-      dos: "无条件站她这边、听她吐槽、帮她挡掉糟心事",
-      donts: "严禁顶嘴、严禁冷战、严禁问“你怎么又生气了”"
-    },
     witty: {
-      title: "易燃易爆小票 · PMS预警",
-      quote: "体内的疯狂星期四已提前开启！前一秒想哭后一秒想吵架，错在激素不在我。",
-      feeding: "甜食！碳水！热汤！电子布洛芬！",
-      dos: "顺毛摸、夸她没错、主动递上小零食和拥抱",
-      donts: "严禁讲道理、严禁挑刺、严禁呼吸太大声（开玩笑的）"
+      title: "顺毛预警小票 · 经前敏感期",
+      quote: "体内快乐激素正在悄悄滑坡，前一秒想吃甜食后一秒有点委屈，错在激素不在她呀。",
+      feeding: "甜食、热汤、小蛋糕，一切暖呼呼的投喂",
+      dos: "温柔顺毛、坚定站她这边、主动递上小零食和拥抱",
+      donts: "别讲道理、别挑刺、别追问“怎么突然不开心”"
     }
   }
 };
 
 let replyPickCounter = 0;
-function pickSymptomReply(tagId, persona) {
-  const entry = SYMPTOM_REPLIES[tagId];
-  if (!entry) return null;
-  const list = entry[persona] || entry.gentle;
+function pickSymptomReply(tagId) {
+  const list = SYMPTOM_REPLIES[tagId];
   if (!list || !list.length) return null;
   replyPickCounter = (replyPickCounter + 1) % 997;
   return list[replyPickCounter % list.length];
@@ -487,13 +356,11 @@ function normalizeState(raw) {
     doctorQuestions: Array.isArray(raw.doctorQuestions) ? raw.doctorQuestions : base.doctorQuestions,
     isDemoData: typeof raw.isDemoData === "boolean" ? raw.isDemoData : false
   };
-  // 兼容旧版 partnerTone 值
-  if (!["gentle", "ceo", "witty"].includes(merged.settings.partnerTone)) {
+  // 兼容旧版 partnerTone / persona 值
+  if (!["gentle", "witty"].includes(merged.settings.partnerTone)) {
     merged.settings.partnerTone = "gentle";
   }
-  if (!["gentle", "ceo"].includes(merged.settings.persona)) {
-    merged.settings.persona = "gentle";
-  }
+  merged.settings.persona = "gentle";
   if (!["paper", "sage", "midnight"].includes(merged.settings.theme)) {
     merged.settings.theme = "paper";
   }
@@ -661,7 +528,7 @@ function computeCycleStats(state) {
 
   return {
     sortedCycles: sorted,
-    historyRows: historyRows.reverse(),
+    historyRows, // 按时间顺序（从早到晚）展示
     avgCycleLen,
     avgPeriodLen,
     minCycle,
@@ -714,6 +581,40 @@ function getFutureDatePrediction(dateStr, stats) {
   };
 }
 
+// 精确计算日历中任意一天的生理分期（支持历史周期间隔与当前/未来周期：生理期 / 预计经期 / 卵泡期 / 排卵期 / 黄体期）
+function getCalendarDayPhase(dateStr, stats) {
+  const cycles = stats.sortedCycles;
+  if (!cycles.length) return { type: "none", season: null, cycleHit: null };
+
+  const cycleHit = findCycleContainingDate(dateStr, cycles, stats.avgPeriodLen);
+  if (cycleHit) return { type: "period", season: SEASON_META.winter, cycleHit };
+
+  if (dateStr < cycles[0].startDate) return { type: "none", season: null, cycleHit: null };
+
+  // 位于两次已记录经期之间的过去日期：按该次真实周期间隔推算卵泡期 / 排卵期 / 黄体期
+  for (let i = 0; i < cycles.length - 1; i++) {
+    const cur = cycles[i];
+    const next = cycles[i + 1];
+    if (dateStr > cur.startDate && dateStr < next.startDate) {
+      const cycleLen = Math.max(18, diffDays(next.startDate, cur.startDate));
+      const periodEnd = cur.endDate || addDays(cur.startDate, stats.avgPeriodLen - 1);
+      const periodDur = Math.max(1, diffDays(periodEnd, cur.startDate) + 1);
+      const dayNum = diffDays(dateStr, cur.startDate) + 1;
+      const ovDay = Math.max(periodDur + 3, cycleLen - 14);
+      if (dayNum < ovDay - 2) return { type: "follicular", season: SEASON_META.spring, cycleHit: null };
+      if (dayNum <= ovDay + 2) return { type: "ovulation", season: SEASON_META.summer, cycleHit: null };
+      return { type: "luteal", season: SEASON_META.autumn, cycleHit: null };
+    }
+  }
+
+  // 当前周期及未来预测日期
+  const pred = getFutureDatePrediction(dateStr, stats);
+  if (pred.type === "predicted-period") return { type: "predicted-period", season: SEASON_META.winter, cycleHit: null };
+  if (pred.season.key === "spring") return { type: "follicular", season: SEASON_META.spring, cycleHit: null };
+  if (pred.season.key === "summer") return { type: "ovulation", season: SEASON_META.summer, cycleHit: null };
+  return { type: "luteal", season: SEASON_META.autumn, cycleHit: null };
+}
+
 // 精力值与敏感度连续曲线函数（保证曲线路径与游标圆点 100% 精准贴合）
 function evalWaveY(ratio) {
   const r = Math.min(1, Math.max(0, ratio));
@@ -751,7 +652,7 @@ function buildWavePaths() {
 }
 
 // 自动发现个人身体小规律（纯本地统计，关联经前 1~4 天与经期第 1~2 天的高频信号）
-function discoverPersonalInsight(state, stats, persona) {
+function discoverPersonalInsight(state, stats) {
   const labelMap = {};
   const intimateIds = new Set();
   SYMPTOM_GROUPS.forEach(g =>
@@ -783,21 +684,17 @@ function discoverPersonalInsight(state, stats, persona) {
 
   if (topPre.length) {
     const names = topPre.map(([id]) => `「${labelMap[id] || id}」`).join(" 和 ");
-    return persona === "ceo"
-      ? `我翻了你的记录，发现个小规律：你每次来之前 1~4 天最容易出现 ${names}。下次撞见这信号，立刻把包里备齐，不许打无准备的仗。`
-      : `翻了翻你之前的记录，发现一个专属小规律：你通常在来之前 1~4 天容易出现 ${names}。下次同时遇到它们，记得包里顺手塞一片卫生巾、早点休息哦。`;
+    return `翻了翻你之前的记录，发现一个专属小规律：你通常在来之前 1~4 天容易出现 ${names}。下次同时遇到它们，记得包里顺手塞一片卫生巾、早点休息哦。`;
   }
   if (topPeriod.length) {
     const names = topPeriod.map(([id]) => `「${labelMap[id] || id}」`).join("、");
-    return persona === "ceo"
-      ? `看你过往记录，刚来前两天最常打卡 ${names}。下次快到日子时，热饮和止痛药提前备到伸手就能拿的地方。`
-      : `从你之前的记录来看，刚来的前两天最常出现 ${names}，下次快到窗口期时提前备好暖贴和止痛药会安心很多。`;
+    return `从你之前的记录来看，刚来的前两天最常出现 ${names}，下次快到窗口期时提前备好暖贴和止痛药会安心很多。`;
   }
   return null;
 }
 
 // 隐私脱敏月度身体切片数据（绝不包含具体日期与私密/用药标签）
-function getMonthlySliceData(state, stats, persona) {
+function getMonthlySliceData(state, stats) {
   const intimateIds = new Set();
   const labelMap = {};
   SYMPTOM_GROUPS.forEach(g =>
@@ -825,10 +722,7 @@ function getMonthlySliceData(state, stats, persona) {
 
   const now = new Date();
   const monthLabel = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const quote =
-    persona === "ceo"
-      ? "“女人，这世上最该被偏爱的是你自己的身体节奏，下个月也继续按舒服的来。”"
-      : "“不是每天都要满格运转，允许自己跟着潮汐起伏，本身就是很棒的照顾。”";
+  const quote = "“不是每天都要满格运转，允许自己跟着潮汐起伏，本身就是很棒的照顾。”";
 
   return {
     monthLabel,
@@ -844,7 +738,6 @@ function getMonthlySliceData(state, stats, persona) {
 function renderAll() {
   const stats = computeCycleStats(appState);
   const stealth = Boolean(appState.settings.camouflageMode);
-  const persona = appState.settings.persona || "gentle";
   const theme = appState.settings.theme || "paper";
 
   // 主题与季节强调色（写在 body 上，确保跟随 data-theme="midnight" 解析深色变量）
@@ -862,9 +755,6 @@ function renderAll() {
     ? "每日天气与精力小记"
     : "只存你设备里的小手帐";
 
-  const personaBtn = document.getElementById("personaQuickBtn");
-  personaBtn.classList.toggle("is-ceo", persona === "ceo");
-  document.getElementById("personaQuickText").textContent = persona === "ceo" ? "霸总模式" : "温柔搭子";
   document.getElementById("stealthBtn").classList.toggle("active", stealth);
   const stealthText = document.getElementById("stealthBtnText");
   if (stealthText) stealthText.textContent = stealth ? "已防窥" : "防窥";
@@ -872,22 +762,22 @@ function renderAll() {
   const demoBar = document.getElementById("demoNoticeBar");
   if (demoBar) demoBar.style.display = appState.isDemoData ? "flex" : "none";
 
-  renderTodayTab(stats, stealth, persona);
-  renderPersonalInsightCard(stats, stealth, persona);
+  renderTodayTab(stats, stealth);
+  renderPersonalInsightCard(stats, stealth);
   renderCapsuleLogger(stealth);
   renderCalendarTab(stats, stealth);
-  renderToolkitTab(stats, stealth, persona);
-  renderMineTab(stealth, persona, theme);
+  renderToolkitTab(stats, stealth);
+  renderMineTab(stealth, theme);
 }
 
-function renderPersonalInsightCard(stats, stealth, persona) {
+function renderPersonalInsightCard(stats, stealth) {
   const card = document.getElementById("personalInsightCard");
   if (!card) return;
   if (stealth) {
     card.style.display = "none";
     return;
   }
-  const insight = discoverPersonalInsight(appState, stats, persona);
+  const insight = discoverPersonalInsight(appState, stats);
   if (!insight) {
     card.style.display = "none";
     return;
@@ -896,15 +786,15 @@ function renderPersonalInsightCard(stats, stealth, persona) {
   card.innerHTML = `
     <div class="insight-banner-head">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"/></svg>
-      <span>${persona === "ceo" ? "霸总帮你盯出的身体规律" : "我发现你的一个小规律"}</span>
+      <span>我发现你的一个小规律</span>
     </div>
     <p>${escapeHtml(insight)}</p>
   `;
 }
 
-function renderTodayTab(stats, stealth, persona) {
+function renderTodayTab(stats, stealth) {
   const s = stats.seasonInfo;
-  const p = PERSONA_COPY[persona] || PERSONA_COPY.gentle;
+  const p = COMPANION_COPY;
   const pSeason = p.seasons[s.key] || p.seasons.winter;
   document.getElementById("currentPhaseChip").textContent = stealth ? s.stealthChip : s.chip;
 
@@ -999,9 +889,7 @@ function renderTodayTab(stats, stealth, persona) {
   document.getElementById("tideWaveBack").setAttribute("d", `M 20,${wy} Q 70,${wy - 12} 120,${wy} T 220,${wy} T 320,${wy} L 320,220 L 20,220 Z`);
   document.getElementById("tideWaveFront").setAttribute("d", `M 20,${wy + 8} Q 70,${wy - 4} 120,${wy + 8} T 220,${wy + 8} T 320,${wy + 8} L 320,220 L 20,220 Z`);
 
-  // 活人感搭子 / 霸总对话气泡（经期推迟时自动换成安抚话术）
-  const bubble = document.getElementById("companionBubble");
-  bubble.classList.toggle("is-ceo", persona === "ceo");
+  // 温柔搭子对话气泡（经期推迟时自动换成安抚话术）
   document.getElementById("companionAvatar").textContent = p.avatar;
   document.getElementById("companionName").textContent = p.name;
   document.getElementById("companionTag").textContent = lastCompanionOverride ? p.reactTag : p.defaultTag;
@@ -1121,8 +1009,14 @@ function renderCalendarTab(stats, stealth) {
   const year = calendarViewDate.getFullYear();
   const month = calendarViewDate.getMonth();
   document.getElementById("calendarMonthTitle").textContent = `${year}年 ${month + 1}月`;
-  document.getElementById("legendPeriodText").textContent = stealth ? "小雨日" : "记过的经期";
-  document.getElementById("legendPredText").textContent = stealth ? "预计变天" : "预计会来";
+  document.getElementById("legendPeriodText").textContent = stealth ? "小雨日" : "生理期";
+  document.getElementById("legendPredText").textContent = stealth ? "预计变天" : "预计经期";
+  const follLegend = document.getElementById("legendFollText");
+  const goldLegend = document.getElementById("legendGoldText");
+  const lutealLegend = document.getElementById("legendLutealText");
+  if (follLegend) follLegend.textContent = stealth ? "晴朗日" : "卵泡期";
+  if (goldLegend) goldLegend.textContent = stealth ? "大晴日" : "排卵期";
+  if (lutealLegend) lutealLegend.textContent = stealth ? "多云日" : "黄体期";
 
   const firstDay = new Date(year, month, 1);
   const startWeekday = (firstDay.getDay() + 6) % 7;
@@ -1145,9 +1039,8 @@ function renderCalendarTab(stats, stealth) {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    const cycleHit = findCycleContainingDate(dateStr, stats.sortedCycles, stats.avgPeriodLen);
-    const inPeriod = Boolean(cycleHit);
-    const pred = getFutureDatePrediction(dateStr, stats);
+    const phase = getCalendarDayPhase(dateStr, stats);
+    const cycleHit = phase.cycleHit;
     const log = appState.logs[dateStr];
     const hasLog = log && ((log.tags && log.tags.length) || (log.note && log.note.trim()));
     const hasEvent = eventDates.has(dateStr);
@@ -1155,23 +1048,29 @@ function renderCalendarTab(stats, stealth) {
     const cls = ["cal-day"];
     if (dateStr === todayStr) cls.push("is-today");
     if (dateStr === selectedDateStr) cls.push("selected-day");
-    if (inPeriod) cls.push("is-period");
-    else if (pred.type === "predicted-period") cls.push("is-predicted-period");
-    else if (pred.type === "ovulation") cls.push("is-ovulation");
+    if (phase.type === "period") cls.push("is-period");
+    else if (phase.type === "predicted-period") cls.push("is-predicted-period");
+    else if (phase.type === "follicular") cls.push("is-follicular");
+    else if (phase.type === "ovulation") cls.push("is-ovulation");
+    else if (phase.type === "luteal") cls.push("is-luteal");
 
-    // 清晰一眼识别的微型中文角标
+    // 清晰一眼识别的微型中文角标（生理期/卵泡期/排卵期/黄体期分色分标）
     let subLabel = "";
-    if (inPeriod) {
+    if (phase.type === "period") {
       if (cycleHit.startDate === cycleHit.endDate) subLabel = stealth ? "雨" : "经";
       else if (dateStr === cycleHit.startDate) subLabel = stealth ? "始" : "来";
       else if (dateStr === cycleHit.endDate) subLabel = stealth ? "晴" : "完";
       else subLabel = stealth ? "雨" : "经";
     } else if (dateStr === todayStr) {
       subLabel = "今";
-    } else if (pred.type === "predicted-period") {
+    } else if (phase.type === "predicted-period") {
       subLabel = "预";
-    } else if (pred.type === "ovulation") {
-      subLabel = "高";
+    } else if (phase.type === "follicular") {
+      subLabel = stealth ? "晴" : "卵";
+    } else if (phase.type === "ovulation") {
+      subLabel = stealth ? "旺" : "排";
+    } else if (phase.type === "luteal") {
+      subLabel = stealth ? "云" : "黄";
     }
 
     cells.push(`
@@ -1205,20 +1104,22 @@ function renderCalendarTab(stats, stealth) {
       <div class="stat-tile-sub">${isRegular ? "节奏很稳" : "有点浮动，已按区间估"}</div>
     </div>
     <div class="stat-tile" style="border-left-color: var(--season-autumn);">
-      <div class="stat-tile-label">下次高光日</div>
+      <div class="stat-tile-label">下次排卵期</div>
       <div class="stat-tile-val" style="font-size:15.5px;">${formatCNDate(addDays(stats.lmpDate, stats.ovulationDayNum - 2))} ~ ${formatCNDate(addDays(stats.lmpDate, stats.ovulationDayNum + 2))}</div>
       <div class="stat-tile-sub">精力与状态通常最好</div>
     </div>
   `;
 
-  // 历史列表（支持直接点击「修改」调整任何一次历史起止日期）
+  // 历史列表（按时间顺序从早到晚展示，支持直接修改）
+  const curYear = String(new Date().getFullYear());
+  const fmtHistoryDate = ds => (ds && ds.slice(0, 4) !== curYear ? `${ds.slice(0, 4)}年${formatCNDate(ds)}` : formatCNDate(ds));
   document.getElementById("cycleHistoryList").innerHTML = stats.historyRows.length
     ? stats.historyRows
         .map(row => `
           <div class="history-row">
             <div>
-              <strong>${formatCNDate(row.startDate)} ~ ${formatCNDate(row.endDate)}（${row.duration}天）</strong>
-              <small>${row.cycleLen ? `间隔 ${row.cycleLen} 天` : "最近一次记录"}${row.excluded ? " · 已忽略偶发波动" : ""}</small>
+              <strong>${fmtHistoryDate(row.startDate)} ~ ${fmtHistoryDate(row.endDate)}<span style="white-space:nowrap;">（${row.duration}天）</span></strong>
+              <small>${row.cycleLen ? `距下次间隔 ${row.cycleLen} 天` : "最近一次记录"}${row.excluded ? " · 已忽略偶发波动" : ""}</small>
             </div>
             <div class="history-row-ops">
               <label class="exclude-label">
@@ -1238,9 +1139,9 @@ function renderCalendarDayDrawer(stats, stealth) {
   const drawer = document.getElementById("calendarDayDrawer");
   const dateStr = selectedDateStr;
   const todayStr = toDateStr(new Date());
-  const cycleHit = findCycleContainingDate(dateStr, stats.sortedCycles, stats.avgPeriodLen);
-  const inPeriod = Boolean(cycleHit);
-  const pred = getFutureDatePrediction(dateStr, stats);
+  const phase = getCalendarDayPhase(dateStr, stats);
+  const cycleHit = phase.cycleHit;
+  const inPeriod = phase.type === "period";
   const dayLog = appState.logs[dateStr] || { tags: [], note: "" };
   const activeTags = new Set(dayLog.tags || []);
   const dayEvents = (appState.events || []).filter(e => e.date === dateStr);
@@ -1268,11 +1169,24 @@ function renderCalendarDayDrawer(stats, stealth) {
     })
     .join("");
 
-  const phaseText = inPeriod
-    ? `${stealth ? "记过的小雨日" : "记过的经期"}（${formatCNDate(cycleHit.startDate)} ~ ${formatCNDate(cycleHit.endDate)}）`
-    : pred.type === "predicted-period"
-      ? (stealth ? "预计可能会下雨" : "预计会在这几天来")
-      : (stealth ? pred.season.stealthTitle : pred.season.title);
+  const phaseLabels = stealth
+    ? {
+        period: `记过的小雨日（${formatCNDate(cycleHit?.startDate)} ~ ${formatCNDate(cycleHit?.endDate)}）`,
+        "predicted-period": "预计可能会下雨",
+        follicular: "晴朗日 · 状态回升",
+        ovulation: "大晴日 · 满格状态",
+        luteal: "多云日 · 放慢节奏",
+        none: "暂无周期记录"
+      }
+    : {
+        period: `生理期（${formatCNDate(cycleHit?.startDate)} ~ ${formatCNDate(cycleHit?.endDate)}）`,
+        "predicted-period": "预计经期 · 记得提前备一片",
+        follicular: "卵泡期 · 满血回春状态回升",
+        ovulation: "排卵期 · 全月精力高光日",
+        luteal: "黄体期 · 经前敏感缓冲期",
+        none: "暂无周期记录"
+      };
+  const phaseText = phaseLabels[phase.type] || "日常手帐";
 
   const eventBanner = dayEvents.length
     ? `<p class="drawer-phase-sub" style="color:var(--season-spring); margin-top:4px;">大事记：${dayEvents.map(e => escapeHtml(e.name)).join("、")}</p>`
@@ -1311,9 +1225,9 @@ function renderCalendarDayDrawer(stats, stealth) {
 }
 
 // ==================== Tab 3: 工具箱（基础壳子，Milestone 3 将全面升级出图/呼吸/多日程） ====================
-function renderToolkitTab(stats, stealth, persona) {
+function renderToolkitTab(stats, stealth) {
   const s = stats.seasonInfo;
-  const tone = appState.settings.partnerTone || "gentle";
+  const tone = appState.settings.partnerTone === "witty" ? "witty" : "gentle";
   document.querySelectorAll("#receiptTonePills [data-partner-tone]").forEach(btn => {
     btn.classList.toggle("selected", btn.getAttribute("data-partner-tone") === tone);
   });
@@ -1333,7 +1247,7 @@ function renderToolkitTab(stats, stealth, persona) {
     <div class="receipt-barcode">|||| ||| || |||| ||| TIDELOG</div>
   `;
 
-  const slice = getMonthlySliceData(appState, stats, persona);
+  const slice = getMonthlySliceData(appState, stats);
   document.getElementById("monthlySlicePreview").innerHTML = `
     <div class="slice-top">
       <span>TIDELOG 月度身体切片</span>
@@ -1465,8 +1379,9 @@ function renderDoctorPanel(stats) {
     .map(([id, c]) => `${labelMap[id] || id}(${c}次)`)
     .join("、") || "近期无明显不适记录";
 
-  const rowsHtml = stats.historyRows
-    .slice(0, 6)
+  const rowsHtml = [...stats.historyRows]
+    .slice(-6)
+    .reverse()
     .map((r, idx) => `
       <tr>
         <td>近第 ${idx + 1} 次</td>
@@ -1528,10 +1443,7 @@ function renderDoctorPanel(stats) {
   `;
 }
 
-function renderMineTab(stealth, persona, theme) {
-  document.querySelectorAll("[data-persona]").forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("data-persona") === persona);
-  });
+function renderMineTab(stealth, theme) {
   document.querySelectorAll("[data-theme-choice]").forEach(btn => {
     btn.classList.toggle("active", btn.getAttribute("data-theme-choice") === theme);
   });
@@ -1578,13 +1490,12 @@ function toggleTagForDate(dateStr, tagId) {
   if (adding) tags.push(tagId);
   else tags.splice(idx, 1);
 
-  const persona = appState.settings.persona || "gentle";
   let toastText = adding ? "已悄悄记下" : "已取消这个标记";
   if (adding) {
-    const reply = pickSymptomReply(tagId, persona);
+    const reply = pickSymptomReply(tagId);
     if (reply) {
       lastCompanionOverride = reply;
-      toastText = persona === "ceo" ? "霸总已收到信号" : "搭子接住你的信号啦";
+      toastText = "搭子接住你的信号啦";
     }
   }
   saveState(toastText);
@@ -1608,13 +1519,6 @@ function bindEvents() {
     switchSubTab("sub-relief");
   });
 
-  // 顶部快捷切换人设（温柔搭子 <-> 霸总模式）
-  document.getElementById("personaQuickBtn").addEventListener("click", () => {
-    appState.settings.persona = appState.settings.persona === "ceo" ? "gentle" : "ceo";
-    lastCompanionOverride = null;
-    saveState(appState.settings.persona === "ceo" ? "已切换为霸总模式" : "已切回温柔手帐搭子");
-  });
-
   // 顶部和“我的”里的防窥天气模式开关
   const toggleStealth = () => {
     appState.settings.camouflageMode = !appState.settings.camouflageMode;
@@ -1627,8 +1531,7 @@ function bindEvents() {
   document.getElementById("quickPeriodToggleBtn").addEventListener("click", () => {
     const todayStr = toDateStr(new Date());
     const stats = computeCycleStats(appState);
-    const persona = appState.settings.persona || "gentle";
-    const p = PERSONA_COPY[persona] || PERSONA_COPY.gentle;
+    const p = COMPANION_COPY;
     const inPeriod = isDateInLoggedPeriod(todayStr, stats.sortedCycles, stats.avgPeriodLen);
     if (inPeriod) {
       const latest = appState.cycles[appState.cycles.length - 1];
@@ -2047,13 +1950,10 @@ function bindEvents() {
     const reply = document.getElementById("ventReplyText");
     if (!ta.value.trim()) return showToast("先写点什么再丢进海里吧");
     box.classList.add("dissolving");
-    const persona = appState.settings.persona || "gentle";
     setTimeout(() => {
       ta.value = "";
       box.classList.remove("dissolving");
-      reply.textContent = persona === "ceo"
-        ? "碎掉了，沉海底了。谁让你不爽的都翻篇，深吸一口气，咱们不跟他们一般见识。"
-        : "已经跟着潮水飘走啦，不留一点痕迹。心里有没有松快了一点点？";
+      reply.textContent = "已经跟着潮水飘走啦，不留一点痕迹。心里有没有松快了一点点？";
       showToast("坏情绪已丢进海里");
     }, 650);
   });
@@ -2071,15 +1971,7 @@ function bindEvents() {
     saveState("已悄悄存进今天的手帐里");
   });
 
-  // 我的：人设、皮肤、参数与备份
-  document.querySelectorAll("[data-persona]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      appState.settings.persona = btn.getAttribute("data-persona");
-      lastCompanionOverride = null;
-      saveState(appState.settings.persona === "ceo" ? "霸总已上线" : "温柔搭子已就位");
-    });
-  });
-
+  // 我的：皮肤、参数与备份
   document.querySelectorAll("[data-theme-choice]").forEach(btn => {
     btn.addEventListener("click", () => {
       appState.settings.theme = btn.getAttribute("data-theme-choice");
@@ -2320,8 +2212,7 @@ function exportReceiptPng(stats) {
 }
 
 function exportMonthlySlicePng(stats) {
-  const persona = appState.settings.persona || "gentle";
-  const slice = getMonthlySliceData(appState, stats, persona);
+  const slice = getMonthlySliceData(appState, stats);
   const W = 900, H = 1200; // 小红书标准 3:4
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -2490,7 +2381,7 @@ function exportDoctorPng(stats) {
   ctx.stroke();
 
   ctx.font = '500 21px "Plus Jakarta Sans", sans-serif';
-  stats.historyRows.slice(0, 6).forEach(r => {
+  [...stats.historyRows].slice(-6).reverse().forEach(r => {
     y += 44;
     ctx.fillStyle = "#1C1917";
     ctx.fillText(r.startDate, pad, y);
@@ -2524,13 +2415,23 @@ function runSelfChecks() {
   console.assert(stats.nextPredStart <= stats.nextPredCenter && stats.nextPredCenter <= stats.nextPredEnd, "window order");
   const w0 = evalWaveY(0.45);
   console.assert(w0.yEnergy >= 10 && w0.yEnergy <= 82, "wave y bounds");
-  const migrated = normalizeState({ settings: { defaultCycleLen: 30 }, cycles: sample.cycles });
-  console.assert(migrated.settings.persona === "gentle" && migrated.settings.theme === "paper", "migration defaults");
-  const insight = discoverPersonalInsight(sample, stats, "gentle");
+  const migrated = normalizeState({ settings: { defaultCycleLen: 30, persona: "ceo", partnerTone: "ceo" }, cycles: sample.cycles });
+  console.assert(migrated.settings.persona === "gentle" && migrated.settings.partnerTone === "gentle" && migrated.settings.theme === "paper", "migration defaults");
+  const insight = discoverPersonalInsight(sample, stats);
   console.assert(Boolean(insight && insight.includes("狂想吃甜食")), "pattern discovery detects pre-period craving");
   sample.logs[toDateStr(new Date())].tags.push("intimate_protected");
-  const slice = getMonthlySliceData(sample, stats, "gentle");
+  const slice = getMonthlySliceData(sample, stats);
   console.assert(!slice.topTags.some(t => t.includes("亲密")), "monthly slice must exclude intimate tags");
+
+  // 自检：历史记录按时间顺序排列 & 日历分期识别（生理期 / 卵泡期 / 排卵期 / 黄体期）
+  for (let i = 1; i < stats.historyRows.length; i++) {
+    console.assert(stats.historyRows[i].startDate >= stats.historyRows[i - 1].startDate, "historyRows must be chronological");
+  }
+  const latestStart = stats.sortedCycles[stats.sortedCycles.length - 1].startDate;
+  console.assert(getCalendarDayPhase(latestStart, stats).type === "period", "start day must be period");
+  console.assert(getCalendarDayPhase(addDays(latestStart, 7), stats).type === "follicular", "day 8 must be follicular");
+  console.assert(getCalendarDayPhase(addDays(latestStart, stats.ovulationDayNum - 1), stats).type === "ovulation", "ovulation day must be ovulation");
+  console.assert(getCalendarDayPhase(addDays(latestStart, stats.ovulationDayNum + 5), stats).type === "luteal", "post-ovulation must be luteal");
 
   // 自检：单日点选涂色合并/拆分与重叠周期合并
   const testState = { settings: { defaultPeriodLen: 5 }, cycles: [], logs: {}, isDemoData: true };

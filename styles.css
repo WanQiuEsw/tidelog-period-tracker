@@ -252,44 +252,6 @@ textarea {
   flex-shrink: 0;
 }
 
-.persona-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-card-solid);
-  color: var(--text-primary);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s var(--ease-spring), border-color 0.2s ease, background 0.2s ease;
-}
-
-.persona-toggle:active {
-  transform: scale(0.95);
-}
-
-.persona-toggle.is-ceo {
-  background: #231F20;
-  color: #F4DEC0;
-  border-color: rgba(244, 222, 192, 0.28);
-}
-
-.persona-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--season-spring);
-}
-
-.persona-toggle.is-ceo .persona-dot {
-  background: #E8B86D;
-  box-shadow: 0 0 8px rgba(232, 184, 109, 0.7);
-}
-
 .stealth-pill {
   display: inline-flex;
   align-items: center;
@@ -688,7 +650,7 @@ textarea {
   cursor: pointer;
 }
 
-/* 活人感搭子/霸总对话气泡 */
+/* 活人感温柔搭子对话气泡 */
 .companion-bubble {
   display: flex;
   align-items: flex-start;
@@ -711,25 +673,6 @@ textarea {
   100% { transform: scale(1); }
 }
 
-.companion-bubble.is-ceo {
-  background: linear-gradient(135deg, #252122, #322A2B);
-  color: #F4ECE4;
-  border-color: rgba(232, 184, 109, 0.26);
-}
-
-.companion-bubble.is-ceo .companion-name {
-  color: #F2C98A;
-}
-
-.companion-bubble.is-ceo .companion-tag {
-  background: rgba(242, 201, 138, 0.16);
-  color: #F2C98A;
-}
-
-.companion-bubble.is-ceo .companion-text {
-  color: #EFE8DF;
-}
-
 .companion-avatar {
   width: 34px;
   height: 34px;
@@ -742,11 +685,6 @@ textarea {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-}
-
-.companion-bubble.is-ceo .companion-avatar {
-  background: linear-gradient(135deg, #E2B46D, #B37E38);
-  color: #1F1A18;
 }
 
 .companion-body {
@@ -1217,9 +1155,20 @@ textarea {
   font-weight: 600;
 }
 
+.cal-day.is-follicular {
+  background: var(--season-spring-soft);
+  color: var(--season-spring);
+}
+
 .cal-day.is-ovulation {
   background: var(--season-summer-soft);
   color: var(--season-summer);
+  font-weight: 600;
+}
+
+.cal-day.is-luteal {
+  background: var(--season-autumn-soft);
+  color: var(--season-autumn);
 }
 
 .cal-dots {
@@ -1274,7 +1223,9 @@ textarea {
 
 .swatch.solid-winter { background: var(--season-winter); }
 .swatch.dashed-winter { background: var(--season-winter-soft); border: 1.5px dashed var(--season-winter); }
+.swatch.soft-spring { background: var(--season-spring-soft); border: 1px solid var(--season-spring); }
 .swatch.soft-summer { background: var(--season-summer-soft); border: 1px solid var(--season-summer); }
+.swatch.soft-autumn { background: var(--season-autumn-soft); border: 1px solid var(--season-autumn); }
 .swatch.dot-log { width: 6px; height: 6px; border-radius: 50%; background: var(--text-primary); }
 .swatch.dot-event { width: 6px; height: 6px; border-radius: 50%; background: var(--season-spring); }
 
@@ -1914,61 +1865,7 @@ textarea {
   background: #FAF9F6;
 }
 
-/* ==================== 11. 我的：人设、皮肤、开关与保险箱 ==================== */
-.persona-cards {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.persona-choice {
-  text-align: left;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1.5px solid var(--border-subtle);
-  background: var(--bg-card-solid);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease;
-}
-
-.persona-choice.active {
-  border-color: var(--active-season);
-  background: var(--active-season-soft);
-}
-
-.persona-choice-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 5px;
-}
-
-.persona-choice strong {
-  font-family: var(--font-serif);
-  font-size: 15.5px;
-}
-
-.choice-badge {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.choice-badge.ceo {
-  background: #231F20;
-  color: #F2C98A;
-}
-
-.persona-choice p {
-  font-size: 12.8px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
+/* ==================== 11. 我的：皮肤、开关与保险箱 ==================== */
 .theme-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

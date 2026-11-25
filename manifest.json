@@ -1,9 +1,16 @@
 {
-  "name": "潮汐历 TideLog · 身体四季与周期能量",
+  "name": "潮汐历 TideLog · 你的温柔身体手帐",
   "short_name": "潮汐历",
-  "description": "去粉红化、零广告、本地隐私优先的女性生理周期与荷尔蒙能量罗盘",
+  "description": "不粉红、无广告、只存在你设备里的温柔生理期手帐，支持周期分期色标与本地隐私保护",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#FBF9F5",
-  "theme_color": "#C86D51"
+  "background_color": "#FAF6F0",
+  "theme_color": "#C96A50",
+  "icons": [
+    {
+      "src": "./assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
 }

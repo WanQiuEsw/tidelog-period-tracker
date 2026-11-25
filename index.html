@@ -51,12 +51,8 @@
         </button>
       </nav>
 
-      <!-- 顶部右侧：一键切人设 + 防窥天气模式 -->
+      <!-- 顶部右侧：防窥天气模式 -->
       <div class="topbar-actions">
-        <button class="persona-toggle" id="personaQuickBtn" type="button" title="切换陪伴语气：温柔手帐搭子 / 霸总模式">
-          <span class="persona-dot" id="personaDot"></span>
-          <span id="personaQuickText">温柔搭子</span>
-        </button>
         <button class="stealth-pill" id="stealthBtn" type="button" aria-label="切换防窥天气手帐模式" title="防窥天气手帐：在工位或地铁隐藏所有生理词">
           <svg id="stealthIconSvg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
@@ -83,7 +79,7 @@
       </div>
 
       <div class="today-grid">
-        <!-- 左/上栏：潮汐呼吸球 + 搭子/霸总实时对话 + 主操作 + 互动曲线 -->
+        <!-- 左/上栏：潮汐呼吸球 + 温柔搭子实时对话 + 主操作 + 互动曲线 -->
         <div class="stack-col">
           <article class="card hero-card">
             <div class="hero-meta-row">
@@ -279,9 +275,11 @@
             <div class="calendar-grid" id="calendarGrid"></div>
 
             <div class="calendar-legend">
-              <span class="legend-item"><i class="swatch solid-winter"></i><span id="legendPeriodText">记过的经期</span></span>
-              <span class="legend-item"><i class="swatch dashed-winter"></i><span id="legendPredText">预计会来</span></span>
-              <span class="legend-item"><i class="swatch soft-summer"></i><span id="legendGoldText">高光日</span></span>
+              <span class="legend-item"><i class="swatch solid-winter"></i><span id="legendPeriodText">生理期</span></span>
+              <span class="legend-item"><i class="swatch dashed-winter"></i><span id="legendPredText">预计经期</span></span>
+              <span class="legend-item"><i class="swatch soft-spring"></i><span id="legendFollText">卵泡期</span></span>
+              <span class="legend-item"><i class="swatch soft-summer"></i><span id="legendGoldText">排卵期</span></span>
+              <span class="legend-item"><i class="swatch soft-autumn"></i><span id="legendLutealText">黄体期</span></span>
               <span class="legend-item"><i class="swatch dot-log"></i><span>有手帐</span></span>
               <span class="legend-item"><i class="swatch dot-event"></i><span>大事记</span></span>
             </div>
@@ -338,9 +336,8 @@
             </div>
 
             <div class="tone-pills" id="receiptTonePills">
-              <button class="capsule-btn selected" data-partner-tone="gentle" type="button">温柔搭子风</button>
-              <button class="capsule-btn" data-partner-tone="ceo" type="button">霸总下令风</button>
-              <button class="capsule-btn" data-partner-tone="witty" type="button">发疯梗王风</button>
+              <button class="capsule-btn selected" data-partner-tone="gentle" type="button">温柔体贴风</button>
+              <button class="capsule-btn" data-partner-tone="witty" type="button">轻松俏皮风</button>
             </div>
 
             <!-- 复古便利店小票预览 -->
@@ -482,32 +479,6 @@
     <section id="tab-mine" class="tab-panel">
       <div class="two-col-grid">
         <div class="stack-col">
-          <!-- 人设选择 -->
-          <article class="card">
-            <div class="card-head compact">
-              <div>
-                <h2 class="section-title">选一个陪你记手帐的人设</h2>
-                <p class="section-sub">随时可以切，全站对话和提醒会立刻换一种语气</p>
-              </div>
-            </div>
-            <div class="persona-cards" id="personaCardsGrid">
-              <button class="persona-choice active" data-persona="gentle" type="button">
-                <div class="persona-choice-top">
-                  <strong>温柔手帐搭子</strong>
-                  <span class="choice-badge">默认</span>
-                </div>
-                <p>“今天不用硬撑，累了就早点钻进被窝，热饮和好心情我都给你留着。”</p>
-              </button>
-              <button class="persona-choice" data-persona="ceo" type="button">
-                <div class="persona-choice-top">
-                  <strong>霸总模式</strong>
-                  <span class="choice-badge ceo">很上头</span>
-                </div>
-                <p>“女人，今天电量就剩 20% 还想加班？准你立刻躺平，谁惹你不爽算激素的。”</p>
-              </button>
-            </div>
-          </article>
-
           <!-- 主题皮肤 & 防窥开关 -->
           <article class="card">
             <div class="card-head compact">
