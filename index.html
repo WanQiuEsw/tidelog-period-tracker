@@ -51,13 +51,19 @@
         </button>
       </nav>
 
-      <!-- 顶部右侧：防窥天气模式 -->
+      <!-- 顶部右侧：防窥天气模式 + 手机端设置入口 -->
       <div class="topbar-actions">
         <button class="stealth-pill" id="stealthBtn" type="button" aria-label="切换防窥天气手帐模式" title="防窥天气手帐：在工位或地铁隐藏所有生理词">
           <svg id="stealthIconSvg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
           </svg>
           <span id="stealthBtnText">防窥</span>
+        </button>
+        <button class="icon-btn mobile-only-btn" id="mobileSettingsBtn" type="button" aria-label="打开手帐设置" title="手帐设置与配色">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
         </button>
       </div>
     </div>
@@ -79,8 +85,17 @@
       </div>
 
       <div class="today-grid">
-        <!-- 左/上栏：潮汐呼吸球 + 温柔搭子实时对话 + 主操作 + 互动曲线 -->
-        <div class="stack-col">
+        <!-- 左/上栏：手机端单屏呼吸主画布（桌面端正常左栏） -->
+        <div class="stack-col home-primary-col">
+          <!-- 手机端 7 天横条轻日历（桌面端隐藏） -->
+          <div class="mobile-week-strip" id="mobileWeekStrip" aria-label="本周日历">
+            <div class="week-strip-head">
+              <span class="week-strip-month" id="mobileWeekMonth">2026年 11月</span>
+              <button type="button" class="week-strip-more" id="openCalFromStripBtn">月历 ›</button>
+            </div>
+            <div class="week-strip-grid" id="mobileWeekGrid"></div>
+          </div>
+
           <article class="card hero-card">
             <div class="hero-meta-row">
               <span class="phase-chip" id="currentPhaseChip">经期 · 合法躺平</span>
@@ -125,7 +140,7 @@
               </div>
             </div>
 
-            <!-- 一眼看懂的 4 阶段横向进度条 -->
+            <!-- 一眼看懂的 4 阶段横向进度条（桌面端展示，手机端收起保持首屏透气） -->
             <div class="phase-stepper" id="phaseStepper" aria-label="当前所处周期阶段">
               <div class="phase-step" data-phase="winter"><i></i><span>经期</span></div>
               <div class="phase-step" data-phase="spring"><i></i><span>回血期</span></div>
@@ -133,112 +148,155 @@
               <div class="phase-step" data-phase="autumn"><i></i><span>经前预警</span></div>
             </div>
 
-            <!-- 活人感对话气泡（会随症状点击实时变化） -->
+            <!-- 活人感对话气泡（手机端轻点可展开「精力波浪与今日贴士」抽屉） -->
             <div class="companion-bubble" id="companionBubble">
               <div class="companion-avatar" id="companionAvatar">搭</div>
               <div class="companion-body">
                 <div class="companion-name-row">
                   <span class="companion-name" id="companionName">手帐搭子</span>
                   <span class="companion-tag" id="companionTag">今日悄悄话</span>
+                  <button type="button" class="mobile-bubble-more" id="openInsightSheetBtn">波浪与贴士 ›</button>
                 </div>
                 <p class="companion-text" id="companionMessage">今天不用逼自己满格运转，按舒服的节奏慢慢来就好。</p>
               </div>
             </div>
 
-            <!-- 拇指友好主操作区 -->
+            <!-- 拇指友好主操作区（手机端 1+1 极简操作，桌面端保留全部快捷入口） -->
             <div class="hero-actions">
               <button class="btn-primary btn-lg" id="quickPeriodToggleBtn" type="button">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
                 <span id="quickBtnText">今天来了</span>
               </button>
-              <button class="btn-soft" id="openRetroModalBtn" type="button">
+              <button class="btn-soft mobile-log-trigger" id="mobileOpenLogBtn" type="button">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                <span id="mobileLogBtnText">记一下今天</span>
+              </button>
+              <button class="btn-soft desktop-only-action" id="openRetroModalBtn" type="button">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 <span>补记/改日期</span>
               </button>
-              <button class="btn-soft btn-relief-jump" id="jumpReliefBtn" type="button" title="痛经或烦躁时点这里">
+              <button class="btn-soft btn-relief-jump desktop-only-action" id="jumpReliefBtn" type="button" title="痛经或烦躁时点这里">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                 <span>有点难受</span>
               </button>
             </div>
           </article>
 
-          <!-- 可互动的能量波浪卡 -->
-          <article class="card wave-card">
-            <div class="card-head compact">
-              <div>
-                <h2 class="section-title" id="waveCardTitle">这个月的精力小波浪</h2>
-                <p class="section-sub" id="wavePreviewLabel">点按或滑动波浪，看看每一天大概是什么状态</p>
-              </div>
-              <div class="wave-legend">
-                <span><i class="dot" style="background:var(--season-spring)"></i>精力值</span>
-                <span><i class="dot" style="background:var(--season-autumn)"></i>敏感度</span>
-              </div>
-            </div>
-
-            <div class="wave-interactive-wrap" id="waveInteractiveWrap">
-              <svg id="hormoneWaveSvg" width="100%" height="92" viewBox="0 0 400 92" preserveAspectRatio="none" role="img" aria-label="周期精力与敏感度变化曲线">
-                <defs>
-                  <linearGradient id="energyFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="var(--season-spring)" stop-opacity="0.22" />
-                    <stop offset="100%" stop-color="var(--season-spring)" stop-opacity="0" />
-                  </linearGradient>
-                </defs>
-                <!-- 柔和参考基线 -->
-                <line x1="0" y1="78" x2="400" y2="78" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="3 4" />
-                <path id="energyAreaPath" fill="url(#energyFill)" />
-                <path id="energyLinePath" fill="none" stroke="var(--season-spring)" stroke-width="2.4" stroke-linecap="round" />
-                <path id="sensitivityLinePath" fill="none" stroke="var(--season-autumn)" stroke-width="2.1" stroke-dasharray="4 4" stroke-linecap="round" />
-                <!-- 贴合曲线的游标线和双光点 -->
-                <line id="hormoneCursorLine" x1="40" y1="8" x2="40" y2="84" stroke="var(--active-season)" stroke-width="1.6" stroke-dasharray="2 2" />
-                <circle id="energyCursorDot" cx="40" cy="60" r="5" fill="var(--bg-card-solid)" stroke="var(--season-spring)" stroke-width="2.6" />
-                <circle id="sensitivityCursorDot" cx="40" cy="65" r="4.5" fill="var(--bg-card-solid)" stroke="var(--season-autumn)" stroke-width="2.4" />
-              </svg>
-              <div class="wave-axis">
-                <span>经期开头</span>
-                <span>回血期</span>
-                <span>高光日</span>
-                <span>经前预警</span>
+          <!-- 手机端收进底部抽屉：精力波浪 + 今日贴士 + 个人规律（桌面端 display:contents 无缝还原） -->
+          <div class="mobile-sheet" id="sheet-insights" data-sheet="sheet-insights" role="dialog" aria-label="精力波浪与今日贴士">
+            <div class="sheet-chrome">
+              <div class="sheet-handle" aria-hidden="true"></div>
+              <div class="sheet-topbar">
+                <div>
+                  <h2 class="sheet-heading">今日状态与精力波浪</h2>
+                  <p class="sheet-sub">滑动波浪预览每天节奏，顺手看今日小贴士</p>
+                </div>
+                <button type="button" class="sheet-close-btn" data-close-sheet aria-label="关闭">✕</button>
               </div>
             </div>
-          </article>
+            <div class="sheet-scroll">
+              <!-- 自动发现的个人小规律 -->
+              <article class="card insight-banner" id="personalInsightCard" style="display: none;"></article>
 
-          <!-- 今日贴心小贴士（工作 / 身体 / 悄悄话） -->
-          <div class="tips-grid" id="dailyGuideCards"></div>
+              <!-- 可互动的能量波浪卡 -->
+              <article class="card wave-card">
+                <div class="card-head compact">
+                  <div>
+                    <h2 class="section-title" id="waveCardTitle">这个月的精力小波浪</h2>
+                    <p class="section-sub" id="wavePreviewLabel">点按或滑动波浪，看看每一天大概是什么状态</p>
+                  </div>
+                  <div class="wave-legend">
+                    <span><i class="dot" style="background:var(--season-spring)"></i>精力值</span>
+                    <span><i class="dot" style="background:var(--season-autumn)"></i>敏感度</span>
+                  </div>
+                </div>
+
+                <div class="wave-interactive-wrap" id="waveInteractiveWrap">
+                  <svg id="hormoneWaveSvg" width="100%" height="92" viewBox="0 0 400 92" preserveAspectRatio="none" role="img" aria-label="周期精力与敏感度变化曲线">
+                    <defs>
+                      <linearGradient id="energyFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--season-spring)" stop-opacity="0.22" />
+                        <stop offset="100%" stop-color="var(--season-spring)" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <!-- 柔和参考基线 -->
+                    <line x1="0" y1="78" x2="400" y2="78" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="3 4" />
+                    <path id="energyAreaPath" fill="url(#energyFill)" />
+                    <path id="energyLinePath" fill="none" stroke="var(--season-spring)" stroke-width="2.4" stroke-linecap="round" />
+                    <path id="sensitivityLinePath" fill="none" stroke="var(--season-autumn)" stroke-width="2.1" stroke-dasharray="4 4" stroke-linecap="round" />
+                    <!-- 贴合曲线的游标线和双光点 -->
+                    <line id="hormoneCursorLine" x1="40" y1="8" x2="40" y2="84" stroke="var(--active-season)" stroke-width="1.6" stroke-dasharray="2 2" />
+                    <circle id="energyCursorDot" cx="40" cy="60" r="5" fill="var(--bg-card-solid)" stroke="var(--season-spring)" stroke-width="2.6" />
+                    <circle id="sensitivityCursorDot" cx="40" cy="65" r="4.5" fill="var(--bg-card-solid)" stroke="var(--season-autumn)" stroke-width="2.4" />
+                  </svg>
+                  <div class="wave-axis">
+                    <span>经期开头</span>
+                    <span>回血期</span>
+                    <span>高光日</span>
+                    <span>经前预警</span>
+                  </div>
+                </div>
+              </article>
+
+              <!-- 今日贴心小贴士（工作 / 身体 / 悄悄话） -->
+              <div class="tips-grid" id="dailyGuideCards"></div>
+            </div>
+          </div>
         </div>
 
-        <!-- 右/下栏：3秒随手记 + 个人身体规律发现 -->
-        <div class="stack-col">
-          <!-- 自动发现的个人小规律 -->
-          <article class="card insight-banner" id="personalInsightCard" style="display: none;"></article>
-
-          <!-- 3秒随手记面板 -->
-          <article class="card logger-card">
-            <div class="card-head">
-              <div>
-                <h2 class="section-title" id="loggerCardTitle">今天感觉怎么样？</h2>
-                <p class="section-sub" id="selectedDateDisplay">正在记：今天（点完自动存）</p>
-              </div>
-              <button class="chip-action" id="toggleIntimateTagsBtn" type="button">隐藏私密项</button>
+        <!-- 右/下栏：3秒随手记（手机端作为底部半屏抽屉，桌面端为右侧固定栏） -->
+        <div class="stack-col home-secondary-col">
+          <div class="mobile-sheet" id="sheet-logger" data-sheet="sheet-logger" role="dialog" aria-label="3秒随手记">
+            <div class="sheet-chrome sheet-chrome-compact">
+              <div class="sheet-handle" aria-hidden="true"></div>
             </div>
+            <div class="sheet-scroll">
+              <!-- 3秒随手记面板 -->
+              <article class="card logger-card">
+                <div class="card-head">
+                  <div>
+                    <h2 class="section-title" id="loggerCardTitle">今天感觉怎么样？</h2>
+                    <p class="section-sub" id="selectedDateDisplay">正在记：今天（点完自动存）</p>
+                  </div>
+                  <div class="logger-head-ops">
+                    <button class="chip-action" id="toggleIntimateTagsBtn" type="button">隐藏私密项</button>
+                    <button type="button" class="sheet-close-btn inline-close" data-close-sheet aria-label="关闭">✕</button>
+                  </div>
+                </div>
 
-            <div id="capsuleGroupsContainer" class="capsule-groups"></div>
+                <div id="capsuleGroupsContainer" class="capsule-groups"></div>
 
-            <div class="note-box-wrap">
-              <label for="dailyNoteInput" class="note-label" id="dailyNoteLabel">随手记一句（吐槽或小确幸都行）</label>
-              <textarea
-                id="dailyNoteInput"
-                class="journal-textarea"
-                rows="3"
-                placeholder="比如：下午突然好想喝热红豆汤、今天开会脑子转得超快、有点累准备十点躺平…"
-              ></textarea>
+                <div class="note-box-wrap">
+                  <label for="dailyNoteInput" class="note-label" id="dailyNoteLabel">随手记一句（吐槽或小确幸都行）</label>
+                  <textarea
+                    id="dailyNoteInput"
+                    class="journal-textarea"
+                    rows="2"
+                    placeholder="比如：下午突然好想喝热红豆汤、今天开会脑子转得超快、有点累准备十点躺平…"
+                  ></textarea>
+                </div>
+
+                <button type="button" class="btn-primary mobile-sheet-done-btn" data-close-sheet>记好啦 · 自动保存</button>
+              </article>
             </div>
-          </article>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ==================== TAB 2: 日历 ==================== -->
-    <section id="tab-calendar" class="tab-panel">
+    <!-- ==================== TAB 2: 日历（手机端为底部抽屉） ==================== -->
+    <section id="tab-calendar" class="tab-panel mobile-sheet" data-sheet="tab-calendar" aria-label="潮汐月历">
+      <div class="sheet-chrome">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-topbar">
+          <div>
+            <h2 class="sheet-heading">潮汐月历与周期</h2>
+            <p class="sheet-sub">点日期看手帐，或开启点选模式快速涂色补记</p>
+          </div>
+          <button type="button" class="sheet-close-btn" data-close-sheet aria-label="关闭">✕</button>
+        </div>
+      </div>
+      <div class="sheet-scroll">
       <div class="calendar-layout">
         <div class="stack-col">
           <article class="card calendar-card">
@@ -312,13 +370,25 @@
           </article>
         </div>
       </div>
+      </div>
     </section>
 
-    <!-- ==================== TAB 3: 工具箱 ==================== -->
-    <section id="tab-toolkit" class="tab-panel">
+    <!-- ==================== TAB 3: 工具箱（手机端为底部抽屉） ==================== -->
+    <section id="tab-toolkit" class="tab-panel mobile-sheet" data-sheet="tab-toolkit" aria-label="工具小铺">
+      <div class="sheet-chrome">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-topbar">
+          <div>
+            <h2 class="sheet-heading" id="toolkitSheetHeading">今日生存小票</h2>
+            <p class="sheet-sub" id="toolkitSheetSub">存成小票图直接甩微信，或随时切换其他小工具</p>
+          </div>
+          <button type="button" class="sheet-close-btn" data-close-sheet aria-label="关闭">✕</button>
+        </div>
+      </div>
+      <div class="sheet-scroll">
       <!-- 顶部子功能分段切换 -->
       <div class="subtab-bar" role="tablist" aria-label="工具箱子模块">
-        <button class="subtab-btn active" data-subtab="sub-cards" type="button">小票晒图</button>
+        <button class="subtab-btn active" data-subtab="sub-cards" type="button">生存小票</button>
         <button class="subtab-btn" data-subtab="sub-relief" type="button">电子布洛芬</button>
         <button class="subtab-btn" data-subtab="sub-events" type="button">大事记</button>
         <button class="subtab-btn" data-subtab="sub-doctor" type="button">看病小抄</button>
@@ -473,10 +543,22 @@
           <div class="doctor-sheet" id="doctorSheetContent"></div>
         </article>
       </div>
+      </div>
     </section>
 
-    <!-- ==================== TAB 4: 我的 ==================== -->
-    <section id="tab-mine" class="tab-panel">
+    <!-- ==================== TAB 4: 我的（手机端由右上角齿轮呼出抽屉） ==================== -->
+    <section id="tab-mine" class="tab-panel mobile-sheet" data-sheet="tab-mine" aria-label="我的手帐设置">
+      <div class="sheet-chrome">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-topbar">
+          <div>
+            <h2 class="sheet-heading">我的手帐设置</h2>
+            <p class="sheet-sub">配色主题、周期默认值与本地隐私备份</p>
+          </div>
+          <button type="button" class="sheet-close-btn" data-close-sheet aria-label="关闭">✕</button>
+        </div>
+      </div>
+      <div class="sheet-scroll">
       <div class="two-col-grid">
         <div class="stack-col">
           <!-- 主题皮肤 & 防窥开关 -->
@@ -589,26 +671,30 @@
           </article>
         </div>
       </div>
+      </div>
     </section>
   </main>
 
-  <!-- 手机端悬浮玻璃底部导航栏 -->
-  <nav class="mobile-bottom-nav" aria-label="手机底部导航">
-    <button class="mnav-btn active" data-tab="tab-today" type="button">
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      <span>今日</span>
+  <!-- 手机端底部抽屉半透明遮罩 -->
+  <div class="mobile-sheet-scrim" id="mobileSheetScrim" aria-hidden="true"></div>
+
+  <!-- 手机端悬浮玻璃快捷轻坞（Dock：呼出各功能底部抽屉） -->
+  <nav class="mobile-bottom-nav" aria-label="手机快捷入口">
+    <button class="mnav-btn" data-open-sheet="tab-calendar" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>月历</span>
     </button>
-    <button class="mnav-btn" data-tab="tab-calendar" type="button">
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-      <span>日历</span>
+    <button class="mnav-btn" data-open-sheet="tab-toolkit" data-open-subtab="sub-cards" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v18l2.5-1.5L9 21l3-1.5L15 21l2.5-1.5L20 21V3l-2.5 1.5L15 3l-3 1.5L9 3 6.5 4.5 4 3z"/><path d="M8 9h8M8 13h5"/></svg>
+      <span>生存小票</span>
     </button>
-    <button class="mnav-btn" data-tab="tab-toolkit" type="button">
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"/></svg>
-      <span>工具箱</span>
+    <button class="mnav-btn" data-open-sheet="tab-toolkit" data-open-subtab="sub-relief" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M8 6V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/><path d="M12 10v6M9 13h6"/></svg>
+      <span>急救角</span>
     </button>
-    <button class="mnav-btn" data-tab="tab-mine" type="button">
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
-      <span>我的</span>
+    <button class="mnav-btn" data-open-sheet="tab-toolkit" data-open-subtab="sub-events" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>
+      <span>工具</span>
     </button>
   </nav>
 

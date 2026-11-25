@@ -391,6 +391,100 @@ let isCalendarPaintMode = false;
 let editingCycleId = null;
 let retroSelectedDur = 5;
 
+let activeMobileSheet = null;
+const MOBILE_MQ = window.matchMedia("(max-width: 839px)");
+const TOOLKIT_SHEET_TITLES = {
+  "sub-cards": ["今日生存小票", "存成小票图直接甩微信，或下滑保存月度切片海报"],
+  "sub-relief": ["电子布洛芬急救角", "跟着圆球 4-7-8 放松呼吸，或把坏情绪丢进海里"],
+  "sub-events": ["未来大事记撞期", "记下重要日子，提前看当天状态与打包清单"],
+  "sub-doctor": ["妇科门诊看病小抄", "白底大字清清楚楚，直接递给医生看或存成图"]
+};
+
+function getWeekDates(anchorDateStr) {
+  const dt = parseDateStr(anchorDateStr);
+  const offsetToMon = (dt.getDay() + 6) % 7;
+  const monStr = addDays(anchorDateStr, -offsetToMon);
+  return Array.from({ length: 7 }, (_, i) => addDays(monStr, i));
+}
+
+function renderMobileWeekStrip(stats, stealth) {
+  const grid = document.getElementById("mobileWeekGrid");
+  if (!grid) return;
+  const todayStr = toDateStr(new Date());
+  const weekDates = getWeekDates(todayStr);
+  const wdNames = ["一", "二", "三", "四", "五", "六", "日"];
+  const [y, m] = todayStr.split("-").map(Number);
+  const monthEl = document.getElementById("mobileWeekMonth");
+  if (monthEl) monthEl.textContent = `${y}年 ${m}月`;
+
+  grid.innerHTML = weekDates
+    .map((dateStr, idx) => {
+      const dayNum = Number(dateStr.split("-")[2]);
+      const phase = getCalendarDayPhase(dateStr, stats);
+      const log = appState.logs[dateStr];
+      const hasLog = log && ((log.tags && log.tags.length) || (log.note && log.note.trim()));
+      const cls = ["week-day-btn"];
+      if (dateStr === todayStr) cls.push("is-today");
+      if (dateStr === selectedDateStr) cls.push("is-selected");
+      if (phase.type === "period") cls.push("is-period");
+      else if (phase.type === "predicted-period") cls.push("is-predicted");
+      else if (phase.type === "ovulation") cls.push("is-ovulation");
+      return `
+        <button type="button" class="${cls.join(" ")}" data-week-date="${dateStr}" aria-label="${formatCNDate(dateStr)}">
+          <span class="week-day-wd">${wdNames[idx]}</span>
+          <span class="week-day-num">${dayNum}</span>
+          ${hasLog ? '<span class="week-day-dot" aria-hidden="true"></span>' : ""}
+        </button>
+      `;
+    })
+    .join("");
+
+  const logBtnTxt = document.getElementById("mobileLogBtnText");
+  if (logBtnTxt) {
+    logBtnTxt.textContent = selectedDateStr === todayStr
+      ? (stealth ? "记一下体感" : "记一下今天")
+      : `记 ${formatCNDate(selectedDateStr)}`;
+  }
+}
+
+function openMobileSheet(sheetId, subTabId = null) {
+  if (!MOBILE_MQ.matches) {
+    if (sheetId.startsWith("tab-")) switchMainTab(sheetId);
+    if (subTabId) switchSubTab(subTabId);
+    return;
+  }
+  if (subTabId) switchSubTab(subTabId);
+  activeMobileSheet = sheetId;
+  document.querySelectorAll(".mobile-sheet").forEach(el => {
+    el.classList.toggle("sheet-open", el.id === sheetId);
+  });
+  document.getElementById("mobileSheetScrim")?.classList.add("open");
+  document.body.classList.add("has-open-sheet");
+  syncMobileDockActive();
+}
+
+function closeMobileSheet() {
+  activeMobileSheet = null;
+  document.querySelectorAll(".mobile-sheet.sheet-open").forEach(el => el.classList.remove("sheet-open"));
+  document.getElementById("mobileSheetScrim")?.classList.remove("open");
+  document.body.classList.remove("has-open-sheet");
+  syncMobileDockActive();
+}
+
+function syncMobileDockActive() {
+  const activeSub = document.querySelector(".subtab-btn.active")?.getAttribute("data-subtab");
+  document.querySelectorAll(".mobile-bottom-nav .mnav-btn").forEach(btn => {
+    const targetSheet = btn.getAttribute("data-open-sheet");
+    const targetSub = btn.getAttribute("data-open-subtab");
+    const on = Boolean(activeMobileSheet) && targetSheet === activeMobileSheet && (
+      !targetSub ||
+      targetSub === activeSub ||
+      (targetSub === "sub-events" && (activeSub === "sub-events" || activeSub === "sub-doctor"))
+    );
+    btn.classList.toggle("active", on);
+  });
+}
+
 function findCycleContainingDate(dateStr, cycles, defaultPeriodLen) {
   for (const c of cycles) {
     const end = c.endDate || addDays(c.startDate, defaultPeriodLen - 1);
@@ -763,6 +857,7 @@ function renderAll() {
   if (demoBar) demoBar.style.display = appState.isDemoData ? "flex" : "none";
 
   renderTodayTab(stats, stealth);
+  renderMobileWeekStrip(stats, stealth);
   renderPersonalInsightCard(stats, stealth);
   renderCapsuleLogger(stealth);
   renderCalendarTab(stats, stealth);
@@ -1233,18 +1328,29 @@ function renderToolkitTab(stats, stealth) {
   });
 
   const rData = RECEIPT_COPY[s.key]?.[tone] || RECEIPT_COPY.winter.gentle;
+  const barWidths = [2, 1, 3, 1, 2, 4, 1, 2, 1, 3, 2, 1, 3, 1, 2, 4, 1, 2, 1, 3, 2, 1, 3, 2, 1, 2];
   document.getElementById("partnerReceiptPreview").innerHTML = `
     <div class="receipt-head">
-      <div class="receipt-store">TIDELOG · ${escapeHtml(rData.title)}</div>
-      <div class="receipt-meta">${toDateStr(new Date())} · 周期第 ${stats.cycleDay} 天 · 剩余电量 ${s.battery}</div>
+      <div class="receipt-meta-top">
+        <span>TIDELOG · 潮汐便利店</span>
+        <span>NO. ${toDateStr(new Date())}</span>
+      </div>
+      <div class="receipt-store">${escapeHtml(rData.title)}</div>
+      <div class="receipt-meta">
+        <span class="receipt-pill">${escapeHtml(s.chip)}</span>
+        <span class="receipt-pill muted">周期第 ${stats.cycleDay} 天 · 电量 ${s.battery}</span>
+      </div>
     </div>
     <p class="receipt-quote">“${escapeHtml(rData.quote)}”</p>
     <div class="receipt-rows">
-      <div class="receipt-row"><strong>投喂推荐</strong><span>${escapeHtml(rData.feeding)}</span></div>
-      <div class="receipt-row"><strong>今天宜做</strong><span>${escapeHtml(rData.dos)}</span></div>
-      <div class="receipt-row"><strong>避雷提醒</strong><span>${escapeHtml(rData.donts)}</span></div>
+      <div class="receipt-row"><strong>推荐投喂</strong><span>${escapeHtml(rData.feeding)}</span></div>
+      <div class="receipt-row is-do"><strong>今日宜做</strong><span>${escapeHtml(rData.dos)}</span></div>
+      <div class="receipt-row is-dont"><strong>避雷提醒</strong><span>${escapeHtml(rData.donts)}</span></div>
     </div>
-    <div class="receipt-barcode">|||| ||| || |||| ||| TIDELOG</div>
+    <div class="receipt-barcode">
+      <div class="receipt-bars" aria-hidden="true">${barWidths.map(w => `<i style="width:${w}px"></i>`).join("")}</div>
+      <div>★ 100% 本地生成 · TIDELOG ★</div>
+    </div>
   `;
 
   const slice = getMonthlySliceData(appState, stats);
@@ -1454,7 +1560,7 @@ function renderMineTab(stealth, theme) {
 
 // ==================== 交互事件绑定 ====================
 function switchMainTab(targetId) {
-  document.querySelectorAll(".nav-pill, .mnav-btn").forEach(b => {
+  document.querySelectorAll(".nav-pill").forEach(b => {
     b.classList.toggle("active", b.getAttribute("data-tab") === targetId);
   });
   document.querySelectorAll(".tab-panel").forEach(p => {
@@ -1472,6 +1578,12 @@ function switchSubTab(subId) {
   document.querySelectorAll(".subtab-panel").forEach(p => {
     p.classList.toggle("active", p.id === subId);
   });
+  const [title, sub] = TOOLKIT_SHEET_TITLES[subId] || TOOLKIT_SHEET_TITLES["sub-cards"];
+  const hEl = document.getElementById("toolkitSheetHeading");
+  const sEl = document.getElementById("toolkitSheetSub");
+  if (hEl) hEl.textContent = title;
+  if (sEl) sEl.textContent = sub;
+  syncMobileDockActive();
 }
 
 function triggerBubblePop() {
@@ -1503,9 +1615,77 @@ function toggleTagForDate(dateStr, tagId) {
 }
 
 function bindEvents() {
-  // 主导航（桌面 + 手机底部同步）
-  document.querySelectorAll(".nav-pill, .mnav-btn").forEach(btn => {
+  // 桌面端主导航
+  document.querySelectorAll(".nav-pill").forEach(btn => {
     btn.addEventListener("click", () => switchMainTab(btn.getAttribute("data-tab")));
+  });
+
+  // 手机端底部轻坞（呼出各功能底部抽屉）
+  document.querySelectorAll(".mobile-bottom-nav .mnav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sheetId = btn.getAttribute("data-open-sheet");
+      const subId = btn.getAttribute("data-open-subtab");
+      if (activeMobileSheet === sheetId && (!subId || document.querySelector(".subtab-btn.active")?.getAttribute("data-subtab") === subId)) {
+        closeMobileSheet();
+      } else {
+        openMobileSheet(sheetId, subId);
+      }
+    });
+  });
+
+  // 手机端各抽屉触发器与关闭机制
+  document.getElementById("mobileSettingsBtn")?.addEventListener("click", () => openMobileSheet("tab-mine"));
+  document.getElementById("mobileOpenLogBtn")?.addEventListener("click", () => openMobileSheet("sheet-logger"));
+  document.getElementById("openCalFromStripBtn")?.addEventListener("click", () => openMobileSheet("tab-calendar"));
+  document.getElementById("openInsightSheetBtn")?.addEventListener("click", e => {
+    e.stopPropagation();
+    openMobileSheet("sheet-insights");
+  });
+  document.getElementById("companionBubble")?.addEventListener("click", () => {
+    if (MOBILE_MQ.matches) openMobileSheet("sheet-insights");
+  });
+
+  // 手机端 7 天横条点选日期
+  document.getElementById("mobileWeekGrid")?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-week-date]");
+    if (!btn) return;
+    const d = btn.getAttribute("data-week-date");
+    const same = selectedDateStr === d;
+    selectedDateStr = d;
+    renderAll();
+    if (same) openMobileSheet("sheet-logger");
+  });
+
+  document.getElementById("mobileSheetScrim")?.addEventListener("click", closeMobileSheet);
+  document.querySelectorAll("[data-close-sheet]").forEach(btn => {
+    btn.addEventListener("click", closeMobileSheet);
+  });
+
+  // 抽屉顶部手柄下滑关闭手势
+  document.querySelectorAll(".sheet-chrome").forEach(chrome => {
+    let startY = null;
+    chrome.addEventListener("pointerdown", e => {
+      if (e.target.closest("button")) return;
+      startY = e.clientY;
+    });
+    chrome.addEventListener("pointerup", e => {
+      if (startY !== null && e.clientY - startY > 44) closeMobileSheet();
+      startY = null;
+    });
+    chrome.addEventListener("pointercancel", () => { startY = null; });
+  });
+
+  // Esc 键关闭弹窗/抽屉，窗口切回桌面端自动收起手机抽屉态
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (document.getElementById("retroModal")?.classList.contains("open")) {
+      document.getElementById("closeRetroModalBtn")?.click();
+    } else if (activeMobileSheet) {
+      closeMobileSheet();
+    }
+  });
+  MOBILE_MQ.addEventListener?.("change", e => {
+    if (!e.matches && activeMobileSheet) closeMobileSheet();
   });
 
   // 工具箱子导航
@@ -1515,8 +1695,12 @@ function bindEvents() {
 
   // 快捷跳到电子布洛芬急救角
   document.getElementById("jumpReliefBtn").addEventListener("click", () => {
-    switchMainTab("tab-toolkit");
-    switchSubTab("sub-relief");
+    if (MOBILE_MQ.matches) {
+      openMobileSheet("tab-toolkit", "sub-relief");
+    } else {
+      switchMainTab("tab-toolkit");
+      switchSubTab("sub-relief");
+    }
   });
 
   // 顶部和“我的”里的防窥天气模式开关
@@ -2443,6 +2627,10 @@ function runSelfChecks() {
   console.assert(testState.cycles.length === 2, "unmarking middle day must split span cleanly");
   upsertCycleMerged(testState, { startDate: "2026-10-01", endDate: "2026-10-05", excluded: false });
   console.assert(testState.cycles.length === 1 && testState.cycles[0].endDate === "2026-10-05", "overlapping upsert must merge cleanly");
+
+  // 自检：手机端 7 天周历条周一到周日连续 7 天且包含基准日
+  const wk = getWeekDates("2026-11-25");
+  console.assert(wk.length === 7 && wk[0] === "2026-11-23" && wk[6] === "2026-11-29" && wk.includes("2026-11-25"), "week strip spans Mon-Sun containing anchor");
 }
 
 document.addEventListener("DOMContentLoaded", () => {

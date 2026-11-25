@@ -1424,50 +1424,109 @@ textarea {
   flex: initial;
 }
 
-/* 复古便利店小票预览 */
+/* 复古便利店小票预览（锯齿热敏纸质感） */
 .receipt-paper {
-  background: #FFFDF8;
+  background: #FFFDF9;
   color: #262220;
-  border-radius: 14px;
-  padding: 20px 18px;
-  border: 1px dashed rgba(38, 34, 32, 0.24);
-  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.14);
+  border-radius: 4px;
+  padding: 20px 18px 18px;
+  margin: 8px 0;
+  box-shadow: 0 12px 26px -12px rgba(45, 38, 34, 0.16);
   font-size: 13px;
   position: relative;
 }
 
+.receipt-paper::before,
+.receipt-paper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-size: 16px 8px;
+  background-repeat: repeat-x;
+}
+
+.receipt-paper::before {
+  top: -8px;
+  background-image:
+    linear-gradient(135deg, transparent 50%, #FFFDF9 50%),
+    linear-gradient(225deg, transparent 50%, #FFFDF9 50%);
+  background-position: 0 0, 8px 0;
+}
+
+.receipt-paper::after {
+  bottom: -8px;
+  background-image:
+    linear-gradient(315deg, transparent 50%, #FFFDF9 50%),
+    linear-gradient(45deg, transparent 50%, #FFFDF9 50%);
+  background-position: 0 0, 8px 0;
+}
+
 .receipt-head {
   text-align: center;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  padding-bottom: 11px;
+  margin-bottom: 11px;
   border-bottom: 1px dashed rgba(38, 34, 32, 0.2);
+}
+
+.receipt-meta-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: #9A8D84;
+  margin-bottom: 6px;
 }
 
 .receipt-store {
   font-family: var(--font-serif);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
+  color: #2D2622;
 }
 
 .receipt-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 11px;
   color: #776F6A;
-  margin-top: 3px;
+  margin-top: 7px;
+}
+
+.receipt-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #F9EAE4;
+  color: #B95D43;
+  font-weight: 600;
+}
+
+.receipt-pill.muted {
+  background: #F3ECE2;
+  color: #6B5E55;
 }
 
 .receipt-quote {
-  font-family: var(--font-serif);
-  font-size: 14.5px;
-  line-height: 1.65;
-  margin-bottom: 14px;
-  color: #221E1C;
+  background: #FAF5EE;
+  border-left: 3px solid #C96A50;
+  border-radius: 0 10px 10px 0;
+  padding: 9px 12px;
+  font-size: 12.8px;
+  line-height: 1.58;
+  margin-bottom: 12px;
+  color: #4A3E37;
 }
 
 .receipt-rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
   padding: 10px 0;
   border-top: 1px dashed rgba(38, 34, 32, 0.18);
   border-bottom: 1px dashed rgba(38, 34, 32, 0.18);
@@ -1476,21 +1535,52 @@ textarea {
 
 .receipt-row {
   display: flex;
+  align-items: flex-start;
   gap: 8px;
+  line-height: 1.5;
 }
 
 .receipt-row strong {
   flex-shrink: 0;
-  color: #6B5F59;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #FBF1DF;
+  color: #AD7428;
+}
+
+.receipt-row.is-do strong {
+  background: #E8F1EB;
+  color: #456E54;
+}
+
+.receipt-row.is-dont strong {
+  background: #F9EAE4;
+  color: #B95D43;
 }
 
 .receipt-barcode {
-  margin-top: 14px;
+  margin-top: 12px;
   text-align: center;
-  font-family: monospace;
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
   color: #8A817C;
+}
+
+.receipt-bars {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 22px;
+  margin-bottom: 5px;
+  opacity: 0.72;
+}
+
+.receipt-bars i {
+  display: block;
+  background: #3A312C;
 }
 
 /* 月度身体切片晒图预览 */
@@ -2100,5 +2190,581 @@ textarea {
 @media (min-width: 840px) {
   .toast {
     bottom: 28px;
+  }
+}
+
+/* ==================== 13. 手机端单页呼吸主画布 + 底部半屏抽屉 ==================== */
+/* 桌面端隐藏手机专属控件，且让抽屉包裹层完全透明，保留原有双栏布局 */
+.mobile-only-btn,
+.mobile-week-strip,
+.mobile-bubble-more,
+.mobile-log-trigger,
+.mobile-sheet-done-btn,
+.sheet-chrome,
+.mobile-sheet-scrim,
+.sheet-close-btn {
+  display: none;
+}
+
+.logger-head-ops {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 840px) {
+  .mobile-sheet:not(.tab-panel),
+  .sheet-scroll {
+    display: contents;
+  }
+}
+
+@media (max-width: 839px) {
+  /* 手机端严格一屏不滚动，所有次级功能以底部抽屉优雅弹出 */
+  html,
+  body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    flex-shrink: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+  }
+
+  .topbar-inner {
+    padding: max(10px, env(safe-area-inset-top, 10px)) 16px 4px;
+  }
+
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+
+  .brand-text h1 {
+    font-size: 19px;
+  }
+
+  .brand-text p {
+    display: none;
+  }
+
+  .mobile-only-btn {
+    display: grid;
+  }
+
+  .stealth-pill {
+    height: 34px;
+    padding: 0 11px;
+    background: color-mix(in srgb, var(--bg-card-solid) 85%, transparent);
+  }
+
+  .app-shell {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 520px;
+    padding: 2px 16px calc(82px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .mobile-week-strip,
+  .hero-card {
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: center top;
+  }
+
+  body.has-open-sheet .mobile-week-strip,
+  body.has-open-sheet .hero-card {
+    transform: scale(0.965);
+  }
+
+  /* 手机端主画布常驻，不再整页切 Tab */
+  #tab-today.tab-panel {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    animation: none;
+  }
+
+  /* 手机端示例提示条：单行紧凑，绝不撑破一屏 */
+  .demo-notice {
+    flex-wrap: nowrap;
+    padding: 6px 11px;
+    margin-bottom: 4px;
+    border-radius: 14px;
+    gap: 8px;
+  }
+
+  .demo-notice-text strong {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .demo-notice-text span {
+    display: none;
+  }
+
+  .demo-notice-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .demo-notice-actions .btn-primary.sm {
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+
+  .demo-notice-actions .chip-action {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .today-grid {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .home-primary-col {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 6px;
+  }
+
+  .home-secondary-col {
+    display: contents;
+  }
+
+  /* 手机端 7 天横条轻日历 */
+  .mobile-week-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .week-strip-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px;
+  }
+
+  .week-strip-month {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .week-strip-more {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+
+  .week-strip-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .week-day-btn {
+    border: none;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 0 6px;
+    cursor: pointer;
+    position: relative;
+    color: var(--text-primary);
+  }
+
+  .week-day-wd {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .week-day-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1.5px solid transparent;
+    transition: transform 0.16s var(--ease-spring), background 0.18s ease;
+  }
+
+  .week-day-btn:active .week-day-num {
+    transform: scale(0.9);
+  }
+
+  .week-day-btn.is-period .week-day-num {
+    background: var(--season-winter-soft);
+    color: var(--season-winter);
+  }
+
+  .week-day-btn.is-predicted .week-day-num {
+    border-style: dashed;
+    border-color: var(--season-winter);
+    color: var(--season-winter);
+  }
+
+  .week-day-btn.is-ovulation .week-day-num {
+    background: var(--season-summer-soft);
+    color: var(--season-summer);
+  }
+
+  .week-day-btn.is-today .week-day-num {
+    background: var(--active-season);
+    color: #fff;
+    border-color: var(--active-season);
+    box-shadow: 0 5px 12px -4px color-mix(in srgb, var(--active-season) 65%, transparent);
+  }
+
+  .week-day-btn.is-selected:not(.is-today) .week-day-num {
+    border-color: var(--active-season);
+    background: var(--bg-card-solid);
+  }
+
+  .week-day-dot {
+    width: 4.5px;
+    height: 4.5px;
+    border-radius: 50%;
+    background: var(--active-season);
+    position: absolute;
+    bottom: 0;
+  }
+
+  /* 手机端去卡片化主视觉：无边框通透呼吸感 */
+  .hero-card {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    flex: 1;
+    min-height: 0;
+    gap: 10px;
+  }
+
+  .hero-meta-row,
+  .phase-stepper,
+  .desktop-only-action {
+    display: none;
+  }
+
+  .orb-stage {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .orb-frame {
+    width: clamp(168px, 27dvh, 226px);
+    height: clamp(168px, 27dvh, 226px);
+  }
+
+  .orb-center {
+    inset: 18px;
+  }
+
+  .orb-eyebrow {
+    font-size: 11px;
+  }
+
+  .orb-big-num {
+    font-size: clamp(23px, 3.6dvh, 33px);
+    margin: 1px 0;
+  }
+
+  .orb-phase-name {
+    font-size: clamp(11px, 1.7dvh, 13px);
+    margin-bottom: 2px;
+  }
+
+  .orb-countdown {
+    font-size: clamp(9.5px, 1.45dvh, 11px);
+  }
+
+  /* 手机端温柔搭子轻语卡：轻点展开「波浪与贴士」抽屉 */
+  .companion-bubble {
+    margin-bottom: 0;
+    padding: 11px 13px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .companion-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  .companion-name-row {
+    margin-bottom: 2px;
+  }
+
+  .companion-tag {
+    display: none;
+  }
+
+  .mobile-bubble-more {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: var(--active-season);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  .companion-text {
+    font-size: 12.8px;
+    line-height: 1.48;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 手机端 1+1 主操作行 */
+  .hero-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .hero-actions .btn-primary {
+    grid-column: auto;
+    padding: 12px 14px;
+    font-size: 13.5px;
+  }
+
+  .mobile-log-trigger {
+    display: inline-flex;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    background: color-mix(in srgb, var(--bg-card-solid) 92%, transparent);
+  }
+
+  /* 手机端底部悬浮轻坞（Dock） */
+  .mobile-bottom-nav {
+    left: 16px;
+    right: 16px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    border-radius: 26px;
+    padding: 6px 8px;
+  }
+
+  .mnav-btn {
+    padding: 7px 4px;
+    gap: 3px;
+    border-radius: 18px;
+  }
+
+  /* 手机端底部半屏抽屉统一架构 */
+  .mobile-sheet-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(36, 28, 22, 0.42);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+
+  .mobile-sheet-scrim.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mobile-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 65;
+    display: flex !important;
+    flex-direction: column;
+    max-height: 86dvh;
+    background: var(--bg-page);
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    border-top: 1px solid var(--border-subtle);
+    box-shadow: 0 -14px 40px rgba(36, 28, 22, 0.22);
+    transform: translateY(105%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.34s ease;
+    animation: none !important;
+  }
+
+  .mobile-sheet.sheet-open {
+    transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .sheet-chrome {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 10px 18px 8px;
+    touch-action: none;
+  }
+
+  .sheet-chrome-compact {
+    padding-bottom: 2px;
+  }
+
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border-strong);
+    margin: 0 auto 10px;
+  }
+
+  .sheet-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sheet-heading {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.25;
+  }
+
+  .sheet-sub {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+  }
+
+  .sheet-close-btn {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-soft);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .sheet-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 16px calc(22px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* 3秒随手记抽屉：暖白直出，无双层套壳 */
+  #sheet-logger {
+    background: var(--bg-card-solid);
+    max-height: 82dvh;
+  }
+
+  #sheet-logger .sheet-scroll {
+    padding: 4px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  #sheet-logger .logger-card {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0;
+  }
+
+  #sheet-logger .capsule-btn {
+    background: var(--bg-soft);
+    border-color: transparent;
+  }
+
+  #sheet-logger .capsule-btn.selected {
+    background: var(--active-season);
+    border-color: var(--active-season);
+  }
+
+  .mobile-sheet-done-btn {
+    display: inline-flex;
+    width: 100%;
+    margin-top: 14px;
+    padding: 13px 18px;
+  }
+
+  /* 工具箱抽屉：手机端卡片更轻盈，底部分段药丸切换 */
+  #tab-toolkit .subtab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    margin-bottom: 12px;
+  }
+
+  /* Toast 在抽屉打开时也保持居中靠上可见 */
+  body.has-open-sheet .toast {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   }
 }
