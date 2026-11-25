@@ -1,19 +1,85 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 136" width="136" height="136">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#D96B52"/>
-      <stop offset="55%" stop-color="#C85A42"/>
-      <stop offset="100%" stop-color="#7B6B8D"/>
-    </linearGradient>
-    <linearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="c1-paper" x1="12%" y1="6%" x2="88%" y2="96%">
       <stop offset="0%" stop-color="#FFFDF9"/>
-      <stop offset="100%" stop-color="#F6EFE6"/>
+      <stop offset="55%" stop-color="#FAF5EC"/>
+      <stop offset="100%" stop-color="#EFE5D6"/>
     </linearGradient>
+    <radialGradient id="c1-glow" cx="50%" cy="46%" r="52%">
+      <stop offset="0%" stop-color="#F9E8DF" stop-opacity="0.72"/>
+      <stop offset="68%" stop-color="#FAF5EC" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="c1-inner-bg" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="76%" stop-color="#FBF7F1"/>
+      <stop offset="100%" stop-color="#F3EAE0"/>
+    </radialGradient>
+    <linearGradient id="c1-ring-grad" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#D97E62"/>
+      <stop offset="52%" stop-color="#C96A50"/>
+      <stop offset="100%" stop-color="#B6573E"/>
+    </linearGradient>
+    <linearGradient id="c1-wave-front" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D27459"/>
+      <stop offset="100%" stop-color="#B6563D"/>
+    </linearGradient>
+    <linearGradient id="c1-wave-mid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5A28B" stop-opacity="0.66"/>
+      <stop offset="100%" stop-color="#C96A50" stop-opacity="0.40"/>
+    </linearGradient>
+    <linearGradient id="c1-moon" x1="20%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#E8BA68"/>
+      <stop offset="100%" stop-color="#C98832"/>
+    </linearGradient>
+    <filter id="c1-grain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="2" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="mono"/>
+      <feComponentTransfer in="mono" result="soft">
+        <feFuncA type="linear" slope="0.042"/>
+      </feComponentTransfer>
+      <feBlend mode="multiply" in="SourceGraphic" in2="soft"/>
+    </filter>
+    <filter id="c1-bead-shadow" x="-45%" y="-45%" width="190%" height="190%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#913E27" flood-opacity="0.28"/>
+    </filter>
+    <clipPath id="c1-squircle">
+      <rect width="512" height="512" rx="116" ry="116"/>
+    </clipPath>
+    <clipPath id="c1-inner-clip">
+      <circle cx="256" cy="256" r="130"/>
+    </clipPath>
   </defs>
-  <rect width="136" height="136" rx="30" fill="url(#bgGrad)"/>
-  <circle cx="68" cy="68" r="46" fill="none" stroke="#FFFDF9" stroke-opacity="0.22" stroke-width="3" stroke-dasharray="6 4"/>
-  <!-- 新月与潮汐波浪组合 -->
-  <path d="M76 32C57.5 34.5 44 50.2 44 69.2C44 89.5 60.5 106 80.8 106C88.5 106 95.6 103.6 101.5 99.5C86.2 100.8 73.2 88.8 73.2 73.2C73.2 58.6 84.1 46.8 98.2 45.1C91.8 37.8 84.2 33.1 76 32Z" fill="url(#moonGrad)" opacity="0.95"/>
-  <path d="M32 88C42 82 52 82 62 88C72 94 82 94 92 88C98 84.5 103 83 108 84" fill="none" stroke="#FFFDF9" stroke-width="4.5" stroke-linecap="round"/>
-  <circle cx="94" cy="40" r="4" fill="#F2C97D"/>
+
+  <g clip-path="url(#c1-squircle)">
+    <rect width="512" height="512" fill="url(#c1-paper)"/>
+    <rect width="512" height="512" fill="url(#c1-glow)"/>
+    <rect width="512" height="512" fill="#FAF6F0" opacity="0.22" filter="url(#c1-grain)"/>
+    <rect x="4" y="4" width="504" height="504" rx="112" ry="112" fill="none" stroke="#FFFFFF" stroke-opacity="0.85" stroke-width="4"/>
+    <rect x="1.5" y="1.5" width="509" height="509" rx="114.5" ry="114.5" fill="none" stroke="#2D2622" stroke-opacity="0.065" stroke-width="3"/>
+
+    <!-- 外层周期圆环轨道与春/冬色段 -->
+    <circle cx="256" cy="256" r="168" fill="none" stroke="#2D2622" stroke-opacity="0.075" stroke-width="22"/>
+    <circle cx="256" cy="256" r="168" fill="none" stroke="#568267" stroke-opacity="0.30" stroke-width="22"
+            stroke-dasharray="225 900" stroke-dashoffset="-742" transform="rotate(-90 256 256)" stroke-linecap="round"/>
+    <circle cx="256" cy="256" r="168" fill="none" stroke="url(#c1-ring-grad)" stroke-width="22"
+            stroke-linecap="round" stroke-dasharray="685 1060" transform="rotate(-90 256 256)"/>
+
+    <!-- 内圆纸面与新月潮汐波 -->
+    <circle cx="256" cy="256" r="130" fill="url(#c1-inner-bg)"/>
+    <circle cx="256" cy="256" r="130" fill="none" stroke="#2D2622" stroke-opacity="0.06" stroke-width="2"/>
+    <g clip-path="url(#c1-inner-clip)">
+      <path d="M 244 157 A 49 49 0 1 0 304 221 A 38 38 0 1 1 244 157 Z" fill="url(#c1-moon)"/>
+      <circle cx="297" cy="180" r="6" fill="#D19442" opacity="0.78"/>
+      <path d="M 110 278 C 162 248, 212 248, 260 272 C 308 296, 358 292, 405 266 L 405 400 L 110 400 Z" fill="#F4DDD3" opacity="0.90"/>
+      <path d="M 110 296 C 158 318, 206 266, 266 286 C 320 304, 360 282, 405 292 L 405 400 L 110 400 Z" fill="url(#c1-wave-mid)"/>
+      <path d="M 110 314 C 164 294, 214 334, 272 316 C 324 300, 364 314, 405 304 L 405 400 L 110 400 Z" fill="url(#c1-wave-front)"/>
+      <path d="M 116 314 C 166 295, 214 334, 272 316 C 324 300, 364 314, 400 305" fill="none" stroke="#FFFDF9" stroke-opacity="0.50" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- 周期进度游标圆点 -->
+    <g filter="url(#c1-bead-shadow)">
+      <circle cx="120.8" cy="355.7" r="19" fill="#FFFDF9" stroke="#C96A50" stroke-width="8"/>
+    </g>
+    <circle cx="256" cy="88" r="6.5" fill="#FFFDF9" opacity="0.95"/>
+  </g>
 </svg>

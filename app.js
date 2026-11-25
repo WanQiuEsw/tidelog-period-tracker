@@ -391,6 +391,76 @@ let isCalendarPaintMode = false;
 let editingCycleId = null;
 let retroSelectedDur = 5;
 
+// 日历各阶段完整名称、状态科普与照护备注（参考 ACOG / Mayo Clinic / 丁香医生常规科普）
+const CALENDAR_PHASE_INFO = {
+  period: {
+    label: "生理期",
+    stealthLabel: "小雨日",
+    colorVar: "var(--season-winter)",
+    softVar: "var(--season-winter-soft)",
+    hormone: "雌孕激素跌至低谷，子宫内膜剥落",
+    stealthHormone: "低电量休整节奏",
+    body: "容易肚子疼/下腹坠胀、腰酸背痛、畏寒怕冷、乏力犯困",
+    mood: "精力不足，心情容易低落、敏感委屈或提不起劲",
+    note: "注意腹部与脚踝保暖，痛经别硬扛（刚发坠时吃止痛药效果更好），减少剧烈运动、多睡少硬撑。",
+    stealthNote: "体感偏累、适合温热饮食与早睡，把节奏放慢一点。",
+    quickTags: ["flow_medium", "flow_heavy", "pain_cramps_mild", "pain_cramps_heavy", "body_backache", "mood_sad", "mood_tired", "med_painkiller"]
+  },
+  "predicted-period": {
+    label: "预计经期",
+    stealthLabel: "预计雨",
+    colorVar: "var(--season-winter)",
+    softVar: "var(--season-winter-soft)",
+    hormone: "临近新一轮来潮窗口，激素回落中",
+    stealthHormone: "即将进入休整窗口",
+    body: "可能开始小腹发沉、腰酸、轻微乏力或胸胀逐渐缓解",
+    mood: "容易想躺平、耐心变薄、情绪略偏低落",
+    note: "包里提前备好卫生巾与止痛药，避免连续熬夜；实际提前或推后 1~3 天都属正常波动。",
+    stealthNote: "提前留出松弛日程，少熬夜多喝温水。",
+    quickTags: ["pain_cramps_mild", "body_backache", "mood_tired", "mood_sad", "mood_craving", "body_bloating", "med_iron", "med_painkiller"]
+  },
+  follicular: {
+    label: "卵泡期",
+    stealthLabel: "晴朗日",
+    colorVar: "var(--season-spring)",
+    softVar: "var(--season-spring-soft)",
+    hormone: "卵泡发育，雌激素稳步上升",
+    stealthHormone: "电量持续回升",
+    body: "水肿消退、体力与新陈代谢回升，皮肤状态通常更清透",
+    mood: "心情晴朗稳定、专注力与自信心回归，思维更轻快",
+    note: "全月“回血黄金期”，适合推进重要学习/工作、约见朋友，也可逐步恢复有氧或力量训练。",
+    stealthNote: "状态轻盈在线，适合推进新计划和适度运动。",
+    quickTags: ["mood_calm", "mood_focus", "mood_tired", "body_insomnia", "mood_craving", "body_acne", "med_bcp", "intimate_protected"]
+  },
+  ovulation: {
+    label: "排卵期",
+    stealthLabel: "大晴日",
+    colorVar: "var(--season-summer)",
+    softVar: "var(--season-summer-soft)",
+    hormone: "雌激素达峰触发 LH 激增，卵子排出",
+    stealthHormone: "全月精力高光窗口",
+    body: "蛋清样透明拉丝分泌物增多、基础体温略升，少数人有单侧下腹轻微排卵痛",
+    mood: "精力与表达欲在线、社交意愿高，整体气色和状态较好",
+    note: "处于易受孕窗口，无备孕计划请做好安全防护；重要汇报、面试或约会很适合放在这几天。",
+    stealthNote: "满格高能日，适合安排重要沟通或出行，记得多补水。",
+    quickTags: ["mood_focus", "mood_calm", "pain_cramps_mild", "body_breast", "mood_craving", "body_bloating", "intimate_protected", "intimate_unprotected"]
+  },
+  luteal: {
+    label: "黄体期",
+    stealthLabel: "多云日",
+    colorVar: "var(--season-autumn)",
+    softVar: "var(--season-autumn-soft)",
+    hormone: "孕酮先升后降，末期雌孕激素快速回落",
+    stealthHormone: "敏感慢节奏窗口",
+    body: "容易胸胀敏感、水肿腹胀、皮肤出油冒痘、犯困浅眠、特别想吃甜食/碳水",
+    mood: "情绪不好、容易烦躁焦虑、莫名低落或泪点变低（常见经前综合征 PMS 表现）",
+    note: "情绪波动是激素退潮所致，别责怪自己！少重盐少咖啡因防水肿，适当吃点复合碳水或黑巧稳情绪，运动可换成散步/拉伸。",
+    stealthNote: "容易累和敏感，少摄入咖啡因与重盐，早点休息更舒服。",
+    quickTags: ["mood_irritable", "mood_sad", "mood_craving", "body_breast", "body_bloating", "body_acne", "body_insomnia", "mood_tired"]
+  }
+};
+
+let previewLegendPhase = null;
 let activeMobileSheet = null;
 const MOBILE_MQ = window.matchMedia("(max-width: 839px)");
 const TOOLKIT_SHEET_TITLES = {
@@ -1149,24 +1219,9 @@ function renderCalendarTab(stats, stealth) {
     else if (phase.type === "ovulation") cls.push("is-ovulation");
     else if (phase.type === "luteal") cls.push("is-luteal");
 
-    // 清晰一眼识别的微型中文角标（生理期/卵泡期/排卵期/黄体期分色分标）
-    let subLabel = "";
-    if (phase.type === "period") {
-      if (cycleHit.startDate === cycleHit.endDate) subLabel = stealth ? "雨" : "经";
-      else if (dateStr === cycleHit.startDate) subLabel = stealth ? "始" : "来";
-      else if (dateStr === cycleHit.endDate) subLabel = stealth ? "晴" : "完";
-      else subLabel = stealth ? "雨" : "经";
-    } else if (dateStr === todayStr) {
-      subLabel = "今";
-    } else if (phase.type === "predicted-period") {
-      subLabel = "预";
-    } else if (phase.type === "follicular") {
-      subLabel = stealth ? "晴" : "卵";
-    } else if (phase.type === "ovulation") {
-      subLabel = stealth ? "旺" : "排";
-    } else if (phase.type === "luteal") {
-      subLabel = stealth ? "云" : "黄";
-    }
+    // 对应颜色显示完整分期名称（生理期 / 预计经期 / 卵泡期 / 排卵期 / 黄体期）
+    const info = CALENDAR_PHASE_INFO[phase.type];
+    let subLabel = info ? (stealth ? info.stealthLabel : info.label) : (dateStr === todayStr ? "今天" : "");
 
     cells.push(`
       <button type="button" class="${cls.join(" ")}" data-date="${dateStr}">
@@ -1241,6 +1296,12 @@ function renderCalendarDayDrawer(stats, stealth) {
   const activeTags = new Set(dayLog.tags || []);
   const dayEvents = (appState.events || []).filter(e => e.date === dateStr);
 
+  // 同步图例按钮高亮（选中对应阶段可查阅该期状态与情况）
+  const activeGuideKey = previewLegendPhase || (CALENDAR_PHASE_INFO[phase.type] ? phase.type : null);
+  document.querySelectorAll("#calendarLegend .legend-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-phase-preview") === activeGuideKey);
+  });
+
   // 检查是否可以作为最近一次已开始经期的结束日（开始后 1~14 天内）
   const nearbyPrevCycle = !inPeriod
     ? [...stats.sortedCycles]
@@ -1251,14 +1312,16 @@ function renderCalendarDayDrawer(stats, stealth) {
         })
     : null;
 
-  const quickIds = ["flow_medium", "flow_heavy", "pain_cramps_mild", "pain_cramps_heavy", "mood_tired", "mood_irritable", "mood_craving", "med_painkiller"];
+  const phaseInfo = activeGuideKey ? CALENDAR_PHASE_INFO[activeGuideKey] : null;
+  const quickIds = phaseInfo?.quickTags || ["flow_medium", "flow_heavy", "pain_cramps_mild", "pain_cramps_heavy", "mood_tired", "mood_irritable", "mood_sad", "mood_craving"];
+  const hideIntimate = Boolean(appState.settings.hideIntimateTags);
   const itemMap = {};
-  SYMPTOM_GROUPS.forEach(g => g.items.forEach(it => { itemMap[it.id] = it; }));
+  SYMPTOM_GROUPS.forEach(g => g.items.forEach(it => { itemMap[it.id] = { ...it, intimate: g.intimate }; }));
 
   const quickChipsHtml = quickIds
     .map(id => {
       const it = itemMap[id];
-      if (!it) return "";
+      if (!it || (hideIntimate && it.intimate)) return "";
       const on = activeTags.has(id);
       return `<button type="button" class="capsule-btn drawer-tag-btn ${on ? "selected" : ""}" data-tag-id="${id}">${escapeHtml(stealth ? it.stealth : it.label)}</button>`;
     })
@@ -1266,9 +1329,9 @@ function renderCalendarDayDrawer(stats, stealth) {
 
   const phaseLabels = stealth
     ? {
-        period: `记过的小雨日（${formatCNDate(cycleHit?.startDate)} ~ ${formatCNDate(cycleHit?.endDate)}）`,
-        "predicted-period": "预计可能会下雨",
-        follicular: "晴朗日 · 状态回升",
+        period: `小雨日（${formatCNDate(cycleHit?.startDate)} ~ ${formatCNDate(cycleHit?.endDate)}）`,
+        "predicted-period": "预计雨 · 接近休整窗口",
+        follicular: "晴朗日 · 电量回升",
         ovulation: "大晴日 · 满格状态",
         luteal: "多云日 · 放慢节奏",
         none: "暂无周期记录"
@@ -1282,6 +1345,20 @@ function renderCalendarDayDrawer(stats, stealth) {
         none: "暂无周期记录"
       };
   const phaseText = phaseLabels[phase.type] || "日常手帐";
+
+  const phaseGuideHtml = phaseInfo
+    ? `<div class="drawer-phase-guide" style="--phase-color:${phaseInfo.colorVar};--phase-soft:${phaseInfo.softVar};">
+        <div class="drawer-phase-guide-head">
+          <span class="drawer-phase-pill">${escapeHtml(stealth ? phaseInfo.stealthLabel : phaseInfo.label)}${previewLegendPhase ? " · 阶段说明" : " · 当日状态参考"}</span>
+          <span class="drawer-phase-hormone">${escapeHtml(stealth ? phaseInfo.stealthHormone : phaseInfo.hormone)}</span>
+        </div>
+        ${stealth
+          ? `<div class="drawer-phase-row"><strong>状态备注</strong>${escapeHtml(phaseInfo.stealthNote)}</div>`
+          : `<div class="drawer-phase-row"><strong>常见身体</strong>${escapeHtml(phaseInfo.body)}</div>
+             <div class="drawer-phase-row"><strong>常见情绪</strong>${escapeHtml(phaseInfo.mood)}</div>
+             <div class="drawer-phase-row"><strong>贴心备注</strong>${escapeHtml(phaseInfo.note)}</div>`}
+      </div>`
+    : "";
 
   const eventBanner = dayEvents.length
     ? `<p class="drawer-phase-sub" style="color:var(--season-spring); margin-top:4px;">大事记：${dayEvents.map(e => escapeHtml(e.name)).join("、")}</p>`
@@ -1313,6 +1390,7 @@ function renderCalendarDayDrawer(stats, stealth) {
         ${eventBanner}
       </div>
     </div>
+    ${phaseGuideHtml}
     ${periodBtnsHtml ? `<div class="drawer-period-actions">${periodBtnsHtml}</div>` : ""}
     <div class="drawer-quick-tags">${quickChipsHtml}</div>
     <textarea id="drawerNoteInput" class="journal-textarea" rows="2" placeholder="给 ${formatCNDate(dateStr)} 留一句手帐备注…">${escapeHtml(dayLog.note || "")}</textarea>
@@ -1942,6 +2020,7 @@ function bindEvents() {
     if (!cell) return;
     const clickedDate = cell.getAttribute("data-date");
     selectedDateStr = clickedDate;
+    previewLegendPhase = null;
     if (isCalendarPaintMode) {
       if (clickedDate > toDateStr(new Date())) {
         renderAll();
@@ -1952,6 +2031,15 @@ function bindEvents() {
       return;
     }
     renderAll();
+  });
+
+  // 点击日历图例上的任意阶段（生理期/预计经期/卵泡期/排卵期/黄体期）可即时查看该期状态与说明
+  document.getElementById("calendarLegend")?.addEventListener("click", e => {
+    const btn = e.target.closest(".legend-btn[data-phase-preview]");
+    if (!btn) return;
+    const key = btn.getAttribute("data-phase-preview");
+    previewLegendPhase = previewLegendPhase === key ? null : key;
+    renderCalendarDayDrawer(computeCycleStats(appState), Boolean(appState.settings.camouflageMode));
   });
 
   document.getElementById("calendarDayDrawer").addEventListener("click", e => {
@@ -2628,9 +2716,13 @@ function runSelfChecks() {
   upsertCycleMerged(testState, { startDate: "2026-10-01", endDate: "2026-10-05", excluded: false });
   console.assert(testState.cycles.length === 1 && testState.cycles[0].endDate === "2026-10-05", "overlapping upsert must merge cleanly");
 
-  // 自检：手机端 7 天周历条周一到周日连续 7 天且包含基准日
+  // 自检：手机端 7 天周历条周一到周日连续 7 天且包含基准日，且 5 种分期科普字典完整
   const wk = getWeekDates("2026-11-25");
   console.assert(wk.length === 7 && wk[0] === "2026-11-23" && wk[6] === "2026-11-29" && wk.includes("2026-11-25"), "week strip spans Mon-Sun containing anchor");
+  ["period", "predicted-period", "follicular", "ovulation", "luteal"].forEach(k => {
+    const info = CALENDAR_PHASE_INFO[k];
+    console.assert(Boolean(info && info.label.length >= 3 && info.body && info.mood && info.note), `phase info complete: ${k}`);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
